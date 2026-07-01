@@ -1,5 +1,5 @@
 import express from "express";
-import { db } from "../config/firebase.js";
+import { db } from "../../config/firebase.js";
 
 const router = express.Router();
 
@@ -10,6 +10,13 @@ const router = express.Router();
 router.post("/save", async (req, res) => {
 
   try {
+
+    if (!db) {
+      return res.status(503).json({
+        success: false,
+        message: "Agenda indisponible : Firebase non configuré"
+      });
+    }
 
     const { phone, sessions, program } = req.body;
 

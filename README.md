@@ -1,0 +1,82 @@
+# UDBL Learning
+
+Plateforme d'apprentissage personnalisé en programmation (C & Python) avec IA.
+
+## Structure
+
+```
+application/
+├── back-end/          # API Express (Node.js)
+│   ├── src/
+│   │   ├── config/    # env, database, passport
+│   │   ├── controllers/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── agents/    # prompts IA
+│   │   ├── middleware/
+│   │   └── db/migrations/
+│   └── data/          # SQLite (généré)
+├── front-end/         # React + Vite + Tailwind
+└── legacy-front-end/  # anciennes pages HTML
+```
+
+## Démarrage rapide
+
+### 1. Back-end
+
+```bash
+cd back-end
+cp .env.example .env   # puis éditez vos clés
+npm install
+npm start
+```
+
+API : http://localhost:5000
+
+### 2. Front-end
+
+```bash
+cd front-end
+npm install
+npm run dev
+```
+
+App : http://localhost:5173
+
+## Base de données
+
+Par défaut : **SQLite** (`back-end/data/udbl.db`).
+
+Pour **MySQL**, dans `.env` :
+
+```env
+DB_CLIENT=mysql2
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=learning_app
+```
+
+Puis créez la base et lancez :
+
+```bash
+npm run migrate
+```
+
+## Variables d'environnement
+
+| Variable | Description |
+|----------|-------------|
+| `DB_CLIENT` | `sqlite3` (défaut) ou `mysql2` |
+| `GROQ_API_KEY` | Génération IA (test, cours, correction) |
+| `JWT_SECRET` | Secret pour les tokens |
+| `FRONTEND_URL` | URL React (CORS + OAuth) |
+| `GOOGLE_CLIENT_*` | Connexion Google (optionnel) |
+| `TWILIO_*` | Rappels SMS (optionnel) |
+
+## Parcours utilisateur
+
+1. Inscription / Connexion
+2. Test de niveau (24 questions)
+3. Programme d'étude généré par IA
+4. Planification des séances + rappels SMS

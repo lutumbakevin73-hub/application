@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+@theme {
+  --color-udbl-blue: #2d5aa3;
+  --color-udbl-blue-dark: #1e4080;
+  --color-udbl-blue-light: #4a7bc8;
+  --color-udbl-green: #2e8b57;
+  --color-udbl-green-dark: #1f6b40;
+  --color-udbl-green-light: #45a86a;
+  --color-udbl-dark: #1a2332;
+  --color-udbl-muted: #64748b;
+  --color-udbl-bg: #eef3f9;
+  --color-udbl-surface: #ffffff;
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --udbl-blue: #2d5aa3;
+  --udbl-blue-dark: #1e4080;
+  --udbl-green: #2e8b57;
+  --udbl-green-light: #45a86a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--udbl-dark);
+  background: linear-gradient(160deg, #eef3f9 0%, #f8fafc 45%, #e8f2ec 100%);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.page-container {
+  @apply max-w-5xl mx-auto px-4 py-8 sm:px-6;
+}
+
+.card {
+  @apply bg-white rounded-2xl border border-slate-200/80 shadow-lg shadow-slate-200/50;
+}
+
+.card-body {
+  @apply p-6 sm:p-8;
+}
+
+.input-field {
+  @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-udbl-dark outline-none transition;
+  @apply focus:border-udbl-blue focus:ring-2 focus:ring-udbl-blue/20;
+}
+
+.btn,
+.btn-primary,
+.btn-success,
+.btn-outline,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:disabled,
+.btn-primary:disabled,
+.btn-success:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  @apply bg-udbl-blue text-white hover:bg-udbl-blue-dark shadow-md shadow-udbl-blue/25;
+}
+
+.btn-success {
+  @apply bg-udbl-green text-white hover:bg-udbl-green-dark shadow-md shadow-udbl-green/25;
+}
+
+.btn-outline {
+  @apply border-2 border-slate-200 bg-white text-udbl-dark hover:border-udbl-blue hover:text-udbl-blue;
+}
+
+.btn-ghost {
+  @apply text-udbl-blue hover:bg-udbl-blue/10 bg-transparent;
+}
+
+.badge,
+.badge-blue,
+.badge-green {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-blue {
+  @apply bg-udbl-blue/10 text-udbl-blue;
+}
+
+.badge-green {
+  @apply bg-udbl-green/10 text-udbl-green-dark;
+}
+
+.link {
+  @apply text-udbl-blue font-medium hover:text-udbl-blue-dark hover:underline;
+}
+
+.progress-track {
+  @apply h-2 w-full overflow-hidden rounded-full bg-slate-200;
+}
+
+.progress-fill {
+  @apply h-full rounded-full bg-gradient-to-r from-udbl-blue to-udbl-green transition-all duration-500;
+}
+
+.auth-shell {
+  @apply flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-10;
+}
+
+.auth-card {
+  @apply bg-white rounded-2xl border border-slate-200/80 shadow-lg shadow-slate-200/50 w-full max-w-md overflow-hidden;
+}
+
+.auth-card-header {
+  @apply bg-gradient-to-br from-udbl-blue to-udbl-blue-dark px-8 py-8 text-center text-white;
+}
+
+.option-card {
+  @apply flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 p-4 transition hover:border-udbl-blue/40 hover:bg-udbl-blue/5;
+}
+
+.option-card-selected {
+  @apply border-udbl-blue bg-udbl-blue/5 ring-2 ring-udbl-blue/20;
+}
+
+.motto {
+  @apply text-xs uppercase tracking-widest text-udbl-green font-semibold;
+}
+
+.sidebar {
+  @apply hidden lg:flex flex-col w-64 shrink-0 border-r border-slate-200/80 bg-white;
+  min-height: calc(100vh - 65px);
+}
+
+.sidebar-open {
+  @apply !flex fixed inset-y-0 left-0 top-[65px] z-50 w-64 shadow-2xl lg:!relative lg:top-0 lg:shadow-none;
+}
+
+.sidebar-overlay {
+  @apply fixed inset-0 top-[65px] z-40 bg-udbl-dark/40 lg:hidden;
+}
+
+.sidebar-brand {
+  @apply p-5 border-b border-slate-100;
+}
+
+.sidebar-section {
+  @apply px-5 pt-5 pb-2 text-xs font-semibold uppercase tracking-wider text-udbl-muted;
+}
+
+.sidebar-nav {
+  @apply flex flex-col gap-1 px-3 flex-1;
+}
+
+.sidebar-link {
+  @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-udbl-muted transition;
+  @apply hover:bg-udbl-blue/10 hover:text-udbl-blue;
+}
+
+.sidebar-link-active {
+  @apply bg-gradient-to-r from-udbl-blue to-udbl-blue-dark text-white shadow-md shadow-udbl-blue/20;
+  @apply hover:text-white hover:from-udbl-blue hover:to-udbl-blue-dark;
+}
+
+.sidebar-link-active .sidebar-icon {
+  @apply bg-white/20 text-white;
+}
+
+.sidebar-icon {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-udbl-blue;
+}
+
+.sidebar-footer {
+  @apply p-4 border-t border-slate-100 mt-auto;
+}
+
+.sidebar-menu-btn {
+  @apply flex h-10 w-10 items-center justify-center rounded-xl text-udbl-blue hover:bg-udbl-blue/10;
+}

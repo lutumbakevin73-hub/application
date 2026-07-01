@@ -9,7 +9,7 @@ function safeParse(text) {
 
 import Groq from "groq-sdk";
 import { buildTestPrompt } from "./prompts.js";
-import { saveQuestions, getQuestionsFromDB } from "../question.service.js";
+import { saveQuestions, getQuestionsFromDB } from "../../services/question.service.js";
 
 const GROQ_KEY = process.env.GROQ_API_KEY;
 

@@ -4,6 +4,11 @@ import { sendSMS } from "./sms.service.js";
 
 export function startReminderService() {
 
+  if (!db) {
+    console.warn("Service de rappel ignoré (Firebase non configuré).");
+    return;
+  }
+
   console.log("✅ Service de rappel démarré.");
 
   // Vérifie toutes les minutes
