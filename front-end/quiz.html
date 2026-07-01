@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test en cours</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .slide {
+      transition: transform 0.5s ease-in-out, opacity 0.5s;
+    }
+    .slide-out {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    .header-app{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.logo{
+    width:90px;
+    height:90px;
+    object-fit:contain;
+    margin-bottom:10px;
+}
+
+.header-app h1{
+    color:#2563eb;
+    font-size:32px;
+    font-weight:bold;
+    margin:0;
+}
+#resultModal{
+
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.55);
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+z-index:9999;
+
+}
+
+.hidden{
+
+display:none !important;
+
+}
+
+.modal-content{
+
+background:white;
+padding:35px;
+border-radius:15px;
+
+width:420px;
+max-width:90%;
+
+text-align:center;
+
+animation:popup .25s ease;
+
+box-shadow:0 15px 35px rgba(0,0,0,.25);
+
+}
+
+@keyframes popup{
+
+from{
+
+transform:scale(.8);
+opacity:0;
+
+}
+
+to{
+
+transform:scale(1);
+opacity:1;
+
+}
+
+}
+
+#resultIcon{
+
+font-size:70px;
+margin-bottom:10px;
+
+}
+
+#resultTitle{
+
+font-size:28px;
+font-weight:bold;
+margin-bottom:10px;
+
+}
+
+#resultMessage{
+
+margin-bottom:25px;
+
+}
+
+.progress-bar{
+
+height:12px;
+background:#ddd;
+
+border-radius:30px;
+
+overflow:hidden;
+
+margin:15px 0;
+
+}
+
+#progressFill{
+
+height:100%;
+
+width:0%;
+
+background:#2563eb;
+
+transition:.4s;
+
+}
+
+#nextQuestionBtn{
+
+margin-top:20px;
+
+background:#2563eb;
+
+color:white;
+
+padding:12px 30px;
+
+border:none;
+
+border-radius:8px;
+
+cursor:pointer;
+
+font-size:16px;
+
+}
+
+#nextQuestionBtn:hover{
+
+background:#1d4ed8;
+.hidden {
+  display: none;
+}
+}
+  </style>
+</head>
+<!-- MODAL RESULTAT -->
+<div id="resultModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 text-center">
+
+    <h2 class="text-2xl font-bold mb-4" id="resultTitle">Résultat</h2>
+
+    <p id="resultMessage" class="mb-4 text-lg"></p>
+
+    <!-- BARRE DE PROGRESSION -->
+    <div class="w-full bg-gray-200 rounded-full h-3 mb-4">
+      <div id="progressBar" class="bg-blue-600 h-3 rounded-full" style="width:0%"></div>
+    </div>
+
+    <p id="progressText" class="text-sm text-gray-600 mb-4"></p>
+
+    <button id="nextBtn"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      Continuer
+    </button>
+
+  </div>
+
+</div>
+<body class="bg-gray-100 min-h-screen">
+<!-- ========================= -->
+<!-- BOITE DE DIALOGUE -->
+<!-- ========================= -->
+
+<div id="resultModal" class="hidden">
+
+  <div class="modal-content">
+
+    <div id="resultIcon"></div>
+
+    <h2 id="resultTitle"></h2>
+
+    <p id="resultMessage"></p>
+
+    <div class="progress-info">
+
+      <span id="progressText"></span>
+
+      <div class="progress-bar">
+
+        <div id="progressFill"></div>
+
+      </div>
+
+      <p id="currentScore"></p>
+
+    </div>
+
+    <button id="nextQuestionBtn">
+      Question suivante →
+    </button>
+
+  </div>
+
+</div>
+  <div class="container mx-auto px-4 py-8">
+
+    <!-- Logo + Nom de l'application -->
+
+    <div class="text-center mb-8">
+
+      <img
+        src="udbl.jpg"
+        alt="UDBL Learning"
+        class="w-24 h-24 mx-auto mb-3"
+      >
+
+      <h1 class="text-3xl font-bold text-blue-600">
+        UDBL Learning
+      </h1>
+
+      <p class="text-gray-600">
+        Test d'évaluation des connaissances
+      </p>
+
+    </div>
+
+    <!-- Bloc du quiz -->
+
+    <div class="bg-white p-8 rounded shadow max-w-3xl mx-auto overflow-hidden">
+
+      <p id="progress" class="text-sm text-gray-500 mb-4"></p>
+
+      <div id="questionCard" class="slide">
+
+        <p id="questionLanguage"
+   class="text-blue-600 font-semibold mb-2">
+</p>
+
+<h2 id="questionText" class="font-semibold mb-4"></h2>
+
+        <!-- QCM -->
+        <div id="options" class="space-y-2"></div>
+
+        <button
+          id="submitBtn"
+          class="mt-6 bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Soumettre
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+<script>
+console.log("SCRIPT QUIZ CHARGÉ");
+function parseJwt(token) {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split('')
+      .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+      .join('')
+  );
+
+  return JSON.parse(jsonPayload);
+}
+const token = localStorage.getItem("token");
+const user = parseJwt(token);
+const userId = user.id;
+
+console.log("Utilisateur connecté :", userId);
+
+const raw = localStorage.getItem("currentTest");
+
+let questions = [];
+
+try {
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    questions = Array.isArray(parsed) ? parsed : parsed.questions;
+  }
+} catch (err) {
+  console.error("Erreur de lecture de currentTest :", err);
+}
+
+if (!questions || questions.length === 0) {
+  alert("Aucune question trouvée. Relance le test.");
+  console.error("Questions vides :", questions);
+}
+
+console.log("QUESTIONS FINAL =", questions);
+let current = 0;
+const userAnswers = [];
+
+console.log("QUESTIONS CHARGÉES:", questions);
+console.log("Nombre de questions :", questions?.length);
+console.log("Première question :", questions?.[0]);
+
+showQuestion();
+console.log("showQuestion appelée");
+console.log("Question courante :", questions[current]);
+function showQuestion() {
+
+  if (!questions || !questions[current]) {
+    console.error("Question invalide:", questions, current);
+    return;
+  }
+
+  const q = questions[current];
+
+  const questionText = q.mini_quiz?.question || q.question;
+  const options = q.mini_quiz?.options || q.options;
+
+  document.getElementById("progress").textContent =
+    `Question ${current + 1} / ${questions.length}`;
+
+document.getElementById("questionLanguage").textContent =
+    q.language ? `Langage : ${q.language}` : "";
+
+  document.getElementById("questionText").textContent =
+    questionText || "Question indisponible";
+
+  const optionsDiv = document.getElementById("options");
+  optionsDiv.innerHTML = "";
+
+  if (options && Array.isArray(options)) {
+    options.forEach((opt, index) => {
+      optionsDiv.innerHTML += `
+        <label class="flex items-center space-x-2">
+          <input type="radio" name="answer" value="${index}">
+          <span>${opt}</span>
+        </label>
+      `;
+    });
+  
+
+ } else if (q.type === "pratique") {
+    optionsDiv.innerHTML = `
+      <textarea id="codeAnswer"
+        class="w-full border rounded p-3 font-mono"
+        rows="8"
+        placeholder="Écris ton code ici..."></textarea>
+    `;
+  }
+}
+document.getElementById("submitBtn").addEventListener("click", async () => {
+ if (current >= questions.length) {
+    console.warn("Test déjà terminé");
+    return;
+  }
+console.log("current =", current);
+console.log("questions.length =", questions.length);
+
+const currentQuestion = questions[current];
+
+console.log("currentQuestion =", currentQuestion);
+
+if (!currentQuestion) {
+  console.error("ERREUR : currentQuestion est undefined");
+  return;
+}
+
+console.log(currentQuestion.type, currentQuestion);
+
+  let userAnswer;
+  let isCorrect = false;
+
+  // ===== QCM =====
+  if (currentQuestion.type === "qcm") {
+
+    const selected = document.querySelector('input[name="answer"]:checked');
+    if (!selected) return alert("Choisissez une réponse");
+
+    userAnswer = parseInt(selected.value);
+
+    isCorrect = userAnswer === currentQuestion.correctAnswer;
+  }
+
+  // ===== PRATIQUE (IA CORRECTION) =====
+  else if (currentQuestion.type === "pratique") {
+
+    const codeInput = document.getElementById("codeAnswer");
+    if (!codeInput || !codeInput.value.trim()) {
+      return alert("Écris ton code avant de soumettre");
+    }
+
+    userAnswer = codeInput.value.trim();
+
+    // APPEL IA BACKEND
+    try {
+
+      const response = await fetch(
+        "http://localhost:5000/api/test/correct-code",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            language: currentQuestion.language,
+            question: currentQuestion.question,
+            correctAnswer: currentQuestion.correctAnswer,
+            userAnswer: userAnswer
+          })
+        }
+      );
+
+      const correction = await response.json();
+
+      console.log("Correction IA :", correction);
+
+      isCorrect = correction.correct;
+
+      // (optionnel mais recommandé)
+      currentQuestion.lastCorrection = correction;
+
+    } catch (err) {
+      console.error("Erreur correction IA :", err);
+      alert("Erreur lors de la correction IA");
+      return;
+    }
+  }
+
+  // ===== STOCKAGE =====
+  userAnswers.push({
+  questionId: currentQuestion.id,
+  theme: currentQuestion.theme,
+  language: currentQuestion.language,
+  type: currentQuestion.type,
+
+  userAnswer,
+  correctAnswer: currentQuestion.correctAnswer,
+
+  // 👇 AJOUT IMPORTANT POUR QCM
+  userAnswerText:
+    currentQuestion.type === "qcm"
+      ? currentQuestion.options[userAnswer]
+      : userAnswer,
+
+  correctAnswerText:
+    currentQuestion.type === "qcm"
+      ? currentQuestion.options[currentQuestion.correctAnswer]
+      : currentQuestion.correctAnswer,
+
+  correct: isCorrect,
+
+  // IA seulement pour pratique
+  lastCorrection: currentQuestion.lastCorrection || null
+});
+console.log("Réponse enregistrée :", userAnswers[userAnswers.length - 1]);
+  // ===== MODAL =====
+  showResultModal(isCorrect);
+});
+function showResultModal(isCorrect) {
+
+  const goodAnswers = userAnswers.filter(a => a.correct).length;
+
+  const modal = document.createElement("div");
+
+  modal.className =
+    "fixed inset-0 bg-black/50 flex items-center justify-center z-50";
+  modal.innerHTML = `
+<div class="bg-white rounded-2xl shadow-2xl p-8 w-[420px] max-w-[90%] text-center">
+    <div class="text-7xl mb-4">
+        ${isCorrect ? "✔️" : "❌"}
+    </div>
+    <h2 class="text-2xl font-bold mb-2
+        ${isCorrect ? "text-green-600" : "text-red-600"}">
+        ${isCorrect ? "Bonne réponse !" : "Mauvaise réponse !"}
+    </h2>
+    <p class="text-gray-600 text-lg">
+        Vous en etes à
+        <span class="font-bold text-blue-600">
+            ${goodAnswers}
+        </span>
+        réponse${goodAnswers > 1 ? "s" : ""}
+        bonnes reponses sur
+        <span class="font-bold">
+            ${current + 1}
+        </span>.
+    </p>
+    <button
+        id="closeModal"
+        class="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">
+
+        Continuer →
+
+    </button>
+
+</div>
+
+`;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("closeModal").onclick = () => {
+
+    modal.remove();
+
+    const card = document.getElementById("questionCard");
+
+    card.classList.add("slide-out");
+
+    setTimeout(() => {
+
+      card.classList.remove("slide-out");
+
+      current++;
+
+      if (current < questions.length) {
+
+        showQuestion();
+
+      } else {
+
+        finishTest();
+
+      }
+
+    }, 300);
+
+  };
+
+}
+
+function nextQuestion() {
+
+  current++;
+
+  if (current < questions.length) {
+    showQuestion();
+  } else {
+    finishTest();
+  }
+}
+
+//showQuestion();
+
+function analyzeResults(results) {
+  const summary = {
+    total: results.length,
+    correct: 0,
+    byTheme: {},
+    byLanguage: {},
+    details: results
+  };
+
+  results.forEach(r => {
+    if (r.correct) summary.correct++;
+
+    if (!summary.byTheme[r.theme]) {
+      summary.byTheme[r.theme] = { total: 0, correct: 0 };
+    }
+    summary.byTheme[r.theme].total++;
+    if (r.correct) summary.byTheme[r.theme].correct++;
+
+    if (!summary.byLanguage[r.language]) {
+      summary.byLanguage[r.language] = { total: 0, correct: 0 };
+    }
+    summary.byLanguage[r.language].total++;
+    if (r.correct) summary.byLanguage[r.language].correct++;
+  });
+
+  summary.percentage = Math.round(
+    (summary.correct / summary.total) * 100
+  );
+
+  return summary;
+}
+/*async function finishTest() {
+
+  const evaluation = analyzeResults(userAnswers);
+
+  await sendStudyData(evaluation);
+
+  renderResults(evaluation);
+}
+*/
+async function finishTest() {
+
+  const evaluation = analyzeResults(userAnswers);
+
+  // Détection des lacunes
+  const weakThemes = [];
+
+  for (const theme in evaluation.byTheme) {
+    const t = evaluation.byTheme[theme];
+    const percent = (t.correct / t.total) * 100;
+
+    if (percent < 70) {
+      weakThemes.push(theme);
+    }
+  }
+
+  try {
+
+    // Enregistrer le programme d'étude
+    const response = await fetch(
+      "http://localhost:5000/api/study/register",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId,
+          weakThemes
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    localStorage.setItem(
+      "studySessions",
+      JSON.stringify(data.sessions)
+    );
+
+    localStorage.setItem(
+      "userScore",
+      evaluation.percentage
+    );
+
+    // Marquer le test terminé
+    await fetch(
+      "http://localhost:5000/api/user/complete-test",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId
+        })
+      }
+    );
+
+  } catch (error) {
+    console.error("Erreur programme étude :", error);
+  }
+
+  renderResults(evaluation);
+}
+
+
+  // =========================
+  // AFFICHAGE RESULTATS
+  // =========================
+
+  
+
+//fin 
+function renderResults(evaluation) {
+  
+ console.log("DETAILS DES RESULTATS :", evaluation.details);
+  
+  //resultat designe
+
+  document.body.innerHTML = `
+    <div class="min-h-screen bg-gray-100 p-6">
+
+      ${renderHeader()}
+      ${renderScore(evaluation)}
+      ${renderStats(evaluation)}
+      ${renderErrors(evaluation)}
+      ${renderCTA()}
+
+    </div>
+  `;
+  
+}
+// =========================
+// UI COMPONENTS
+// =========================
+function renderHeader() {
+  return `
+    <div class="bg-white shadow rounded-xl p-4 flex items-center gap-4 mb-6">
+      <img src="udbl.jpg" class="w-14 h-14 rounded-full" />
+
+      <div>
+        <h1 class="text-2xl font-bold text-blue-700">
+          UDBL Learning
+        </h1>
+        <p class="text-gray-500">
+          Résultats de votre test
+        </p>
+      </div>
+    </div>
+  `;
+  
+}
+  function renderScore(evaluation) {
+  return `
+    <div class="bg-white rounded-xl shadow p-6 text-center mb-6">
+      <h2 class="text-lg font-semibold mb-2">Score global</h2>
+
+      <div class="text-5xl font-bold text-blue-600">
+        ${evaluation.percentage}%
+      </div>
+
+      <p class="text-gray-500 mt-2">
+        ${evaluation.correct} bonnes réponses / ${evaluation.total}
+      </p>
+    </div>
+  `;
+}
+  function renderStats(evaluation) {
+  return `
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h3 class="font-bold mb-3">Par thème</h3>
+
+        ${Object.entries(evaluation.byTheme).map(([theme, t]) => {
+          const p = Math.round((t.correct / t.total) * 100);
+
+          return `
+            <div class="border p-2 rounded mb-2">
+              <p>${theme}</p>
+              <p class="${p < 70 ? 'text-red-600' : 'text-green-600'} font-bold">
+                ${p}%
+              </p>
+            </div>
+          `;
+        }).join("")}
+
+      </div>
+
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h3 class="font-bold mb-3">Par langage</h3>
+
+        ${Object.entries(evaluation.byLanguage).map(([lang, l]) => {
+          const p = Math.round((l.correct / l.total) * 100);
+
+          return `
+            <div class="border p-2 rounded mb-2">
+              <p>${lang}</p>
+              <p class="${p < 70 ? 'text-red-600' : 'text-green-600'} font-bold">
+                ${p}%
+              </p>
+            </div>
+          `;
+        }).join("")}
+
+      </div>
+
+    </div>
+  `;
+}
+  function renderErrors(evaluation) {
+
+  const wrong = evaluation.details.filter(q => !q.correct);
+
+  return `
+    <div class="bg-white p-6 rounded-xl shadow mb-6">
+
+      <h2 class="text-xl font-bold text-red-600 mb-4">
+        Questions à retravailler
+      </h2>
+
+      ${wrong.map(q => {
+
+        const c = q.lastCorrection;
+
+        return `
+          <div class="border p-4 rounded mb-3">
+
+            <p class="font-bold">
+              ${q.language} / ${q.theme}
+            </p>
+
+            <p class="text-sm mb-1">
+              <strong>Votre réponse :</strong>
+             ${
+                q.type === "qcm"
+              ? q.userAnswerText
+              : q.userAnswer
+              }
+            </p>
+            
+            ${q.type === "qcm" ? `
+            <p class="text-sm mb-1">
+           <strong>Bonne réponse :</strong>
+          ${q.correctAnswerText}
+            </p>
+          ` : ""}
+      
+           ${q.type === "pratique" ? `
+            <details class="mt-2">
+              <summary class="text-blue-600 cursor-pointer">
+                 Voir correction 
+              </summary>
+
+              <div class="mt-2 text-sm space-y-2">
+
+                <p><strong>Score :</strong> ${c?.score ?? 0}/100</p>
+
+                <p><strong>Feedback :</strong> ${c?.feedback ?? ""}</p>
+
+                ${c?.mistakes?.length ? `
+                  <ul class="list-disc ml-5">
+                    ${c.mistakes.map(m => `<li>${m}</li>`).join("")}
+                  </ul>
+                ` : ""}
+
+                <pre class="bg-black text-white p-2 rounded overflow-x-auto">
+${c?.correct_code ?? ""}
+                </pre>
+
+              </div>
+            </details>
+           ` : ""}
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+}
+  function renderCTA() {
+  return `
+    <div class="text-center">
+      <button
+        onclick="window.location.href='plan_etude.html'"
+        class="bg-blue-600 text-white px-6 py-3 rounded-lg"
+      >
+        Générer mon programme
+      </button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

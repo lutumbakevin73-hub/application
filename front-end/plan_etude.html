@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Plan d'étude</title>
+<style>
+  .header-app{
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+
+  display:flex;
+  align-items:center;
+  gap:15px;
+
+  margin-bottom:25px;
+}
+
+.logo{
+  width:70px;
+  height:70px;
+  object-fit:cover;
+  border-radius:50%;
+}
+
+.header-app h1{
+  margin:0;
+  color:#2563eb;
+  font-size:28px;
+}
+
+.header-app p{
+  margin:5px 0 0 0;
+  color:#666;
+}
+
+body{
+  font-family:Arial;
+  background:#f5f7fa;
+  padding:40px;
+}
+
+h2{
+  color:#2563eb;
+  margin-bottom:20px;
+}
+body {
+  font-family: Arial;
+  background: #f5f7fa;
+  text-align: center;
+  padding: 40px;
+}
+
+.program-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  width: 220px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+button {
+  margin-top: 15px;
+  padding: 10px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+/* Animation du bouton recommandé */
+.recommended {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1.); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1.); }
+}
+.modal {
+
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0,0,0,0.5);
+
+  display: none;
+
+  justify-content: center;
+  align-items: center;
+
+  z-index: 999;
+
+}
+
+.modal-content {
+
+  background: white;
+
+  padding: 25px;
+
+  border-radius: 12px;
+
+  width: 350px;
+
+  text-align: center;
+
+  animation: pop 0.3s ease;
+
+}
+
+.modal-content h3{
+
+  color:#2563eb;
+  margin-bottom:10px;
+
+}
+
+.modal-content button{
+
+  margin-top:15px;
+
+  background:#2563eb;
+
+  color:white;
+
+  border:none;
+
+  padding:10px 20px;
+
+  border-radius:6px;
+
+  cursor:pointer;
+
+}
+
+@keyframes pop{
+
+  from{
+    transform:scale(0.7);
+    opacity:0;
+  }
+
+  to{
+    transform:scale(1);
+    opacity:1;
+  }
+
+}
+</style>
+</head>
+<body>
+
+
+<div class="header-app">
+
+  <img
+    src="udbl.jpg"
+    alt="UDBL Learning"
+    class="logo"
+  >
+
+  <div>
+    <h1>UDBL Learning</h1>
+    <p>Programme personnalisé de renforcement</p>
+  </div>
+
+</div>
+
+<h2>Votre programme d'étude</h2>
+
+<div id="sessionsContainer"></div>
+<div class="program-container">
+
+  <div class="card">
+    <h3>Programme 1 ou 2 jours</h3>
+    <p>Lacunes légères</p>
+    <button id="prog1">Choisir</button>
+  </div>
+
+  <div class="card">
+    <h3>Programme 3 jours </h3>
+    <p>Lacunes modérées</p>
+    <button id="prog2">Choisir</button>
+  </div>
+
+  <div class="card">
+    <h3>Programme 5 jours</h3>
+    <p>Lacunes importantes</p>
+    <button id="prog3">Choisir</button>
+  </div>
+
+  <div class="card">
+    <h3>Programme 7 jours</h3>
+    <p>Très grandes lacunes</p>
+    <button id="prog4">Choisir</button>
+  </div>
+
+</div>
+
+<script>
+
+// ==============================
+// SCORE UTILISATEUR
+// ==============================
+
+const score =
+  parseInt(localStorage.getItem("userScore")) || 50;
+
+// ==============================
+// THEMES FAIBLES
+// ==============================
+
+let weakThemes =
+  JSON.parse(localStorage.getItem("weakThemes"));
+
+if (!weakThemes || weakThemes.length === 0) {
+
+  weakThemes = [
+    "variables",
+    "conditions",
+    "boucles",
+    "fonctions"
+  ];
+
+}
+
+// ==============================
+// ID UTILISATEUR
+// ==============================
+
+const userId =
+  localStorage.getItem("userId") || 1;
+
+//
+// ==============================
+// PROGRAMME RECOMMANDÉ
+// ==============================
+
+let recommendedProgram;
+
+// Excellent niveau
+if (score >= 80) {
+
+  recommendedProgram = "prog1";
+
+}
+
+// Niveau moyen
+else if (score >= 60) {
+
+  recommendedProgram = "prog2";
+
+}
+
+// Faiblesses importantes
+else if (score >= 40) {
+
+  recommendedProgram = "prog3";
+
+}
+
+// Grandes difficultés
+else {
+
+  recommendedProgram = "prog4";
+
+}
+// ==============================
+// ANIMATION BOUTON
+// ==============================
+
+document
+  .getElementById(recommendedProgram)
+  .classList.add("recommended");
+
+// ==============================
+// MODAL PERSONNALISÉE
+// ==============================
+
+function showModal(message) {
+
+  const oldModal =
+    document.getElementById("customModal");
+
+  if (oldModal) {
+    oldModal.remove();
+  }
+
+  const modal =
+  document.createElement("div");
+
+  modal.id = "customModal";
+
+  modal.innerHTML = `
+
+    <div class="modal-box">
+
+      <h3>
+        Programme non adapté
+      </h3>
+
+      <p>
+        ${message}
+      </p>
+
+      <button id="closeModal">
+        Compris
+      </button>
+
+    </div>
+
+  `;
+
+  modal.style.position = "fixed";
+  modal.style.top = "0";
+  modal.style.left = "0";
+  modal.style.width = "100%";
+  modal.style.height = "100%";
+  modal.style.background = "rgba(0,0,0,0.5)";
+  modal.style.display = "flex";
+  modal.style.justifyContent = "center";
+  modal.style.alignItems = "center";
+  modal.style.zIndex = "9999";
+
+  document.body.appendChild(modal);
+
+  const box =
+    modal.querySelector(".modal-box");
+
+  box.style.background = "white";
+  box.style.padding = "25px";
+  box.style.borderRadius = "12px";
+  box.style.width = "350px";
+  box.style.textAlign = "center";
+
+  const btn =
+    modal.querySelector("button");
+
+  btn.style.marginTop = "15px";
+  btn.style.padding = "10px 20px";
+  btn.style.background = "#2563eb";
+  btn.style.color = "white";
+  btn.style.border = "none";
+  btn.style.borderRadius = "6px";
+  btn.style.cursor = "pointer";
+
+  btn.addEventListener("click", () => {
+    modal.remove();
+  });
+
+}
+
+// ==============================
+// CLIC SUR PROGRAMME
+// ==============================
+
+document.querySelectorAll("button").forEach(btn => {
+
+  btn.addEventListener("click", async () => {
+
+    const selected = btn.id;
+
+    const score =
+      parseInt(localStorage.getItem("userScore")) || 0;
+
+    // ==========================
+    // BLOQUAGE LOGIQUE
+    // ==========================
+
+    const isTooShort =
+      score < 40 &&
+      (selected === "prog1" || selected === "prog2");
+
+    const isTooLong =
+      score >= 80 &&
+      (selected === "prog3" || selected === "prog4");
+
+    if (isTooShort || isTooLong) {
+
+      showModal(
+        "Ce programme n'est pas adapté à votre niveau."
+      );
+
+      return;
+    }
+
+    try {
+
+      // ==========================
+      // APPEL BACKEND (OPTIONNEL MAIS IMPORTANT)
+      // ==========================
+
+      const response = await fetch(
+        "http://localhost:5000/api/study/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            userId,
+            weakThemes
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("Réponse backend :", data);
+
+      if (!data.success || !data.sessions) {
+
+        showModal("Erreur génération programme");
+        return;
+      }
+
+      // ==========================
+      // SAUVEGARDE
+      // ==========================
+
+      localStorage.setItem(
+        "studySessions",
+        JSON.stringify(data.sessions)
+      );
+
+      localStorage.setItem(
+        "programId",
+        data.programId
+      );
+
+      localStorage.setItem(
+        "selectedProgram",
+        selected
+      );
+
+      // ==========================
+      // REDIRECTION
+      // ==========================
+
+      window.location.href = "agenda.html";
+
+    } catch (err) {
+
+      console.error(err);
+
+      showModal("Erreur serveur");
+
+    }
+
+  });
+
+});
+
+</script>
+<!-- MODAL -->
+
+<div id="customModal" class="modal">
+
+  <div class="modal-content">
+
+    <h3>Programme non adapté</h3>
+
+    <p id="modalMessage"></p>
+
+    <button id="closeModal">
+      Compris
+    </button>
+
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UDBL Learning - Accueil</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 overflow-x-hidden">
+
+<!-- HEADER -->
+<header class="bg-white shadow p-4 flex justify-between items-center relative z-30">
+
+    <!-- Bouton menu -->
+    <button id="menuBtn" class="text-2xl text-blue-600">
+        ☰
+    </button>
+
+    <div class="flex items-center">
+        <img src="udbl.jpg" alt="Logo" class="w-12 h-12 mr-2">
+        <h1 class="text-blue-600 font-bold text-xl">UDBL Learning</h1>
+    </div>
+
+    <nav class="hidden md:block">
+        <a href="connexion.html" class="text-blue-600 mx-2 hover:underline">Connexion</a>
+        <a href="authentification.html" class="text-blue-600 mx-2 hover:underline">S'inscrire</a>
+    </nav>
+
+</header>
+
+
+<!-- OVERLAY -->
+<div id="overlay"
+class="fixed inset-0 bg-black bg-opacity-40 hidden opacity-0 transition-opacity duration-300 z-40">
+</div>
+
+
+<!-- SIDEBAR -->
+<div id="sidebar"
+class="fixed top-0 left-0 h-full w-64 bg-blue-500 text-white
+transform -translate-x-full transition-transform duration-300 ease-in-out
+shadow-2xl z-50">
+
+    <div class="p-5 font-bold text-xl border-b border-blue-400">
+        UDBL MENU
+    </div>
+
+    <ul class="p-4 space-y-2">
+
+        <!-- FORMATIONS -->
+        <li>
+            <button class="dropdownBtn w-full text-left p-2 rounded hover:bg-blue-600 transition">
+                 Tableau de bord 
+            </button>
+            <ul class="submenu hidden pl-4 mt-2 space-y-1 text-sm">
+                <li class="hover:text-gray-200 cursor-pointer">Développement Web</li>
+                <li class="hover:text-gray-200 cursor-pointer">Intelligence Artificielle</li>
+            </ul>
+        </li>
+
+        <!-- AGENTS IA -->
+        <li>
+            <button class="dropdownBtn w-full text-left p-2 rounded hover:bg-blue-600 transition">
+                 parametres
+            </button>
+            <ul class="submenu hidden pl-4 mt-2 space-y-1 text-sm">
+                <li class="hover:text-gray-200 cursor-pointer">Agent Quiz</li>
+                <li class="hover:text-gray-200 cursor-pointer">Agent Coaching</li>
+            </ul>
+        </li>
+
+        <!-- CONNEXION -->
+        <li>
+            <a href="connexion.html"
+            class="block p-2 rounded hover:bg-blue-600 transition">
+                Connexion
+            </a>
+        </li>
+
+    </ul>
+
+</div>
+
+
+<!-- CONTENU PRINCIPAL -->
+<main class="flex flex-col items-center justify-center h-screen text-center px-4">
+
+    <img src="udbl.jpg" alt="Logo" class="w-24 h-24 mb-4">
+    
+    <h2 class="text-3xl font-bold mb-4">
+        Bienvenue sur UDBL Learning
+    </h2>
+
+    <p class="text-gray-600 mb-6">
+        Apprenez et pratiquez sur  notre plate-forme.
+    </p>
+
+    <a href="connexion.html"
+    class="bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 transition duration-300 shadow-lg">
+        Commencer
+    </a>
+
+</main>
+
+
+<!-- SCRIPT -->
+<script>
+
+const menuBtn = document.getElementById("menuBtn");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+
+// Ouvrir / Fermer menu
+function toggleMenu() {
+
+    sidebar.classList.toggle("-translate-x-full");
+
+    overlay.classList.toggle("hidden");
+
+    setTimeout(() => {
+        overlay.classList.toggle("opacity-0");
+    }, 10);
+}
+
+menuBtn.addEventListener("click", toggleMenu);
+overlay.addEventListener("click", toggleMenu);
+
+
+// Dropdown sous-menu
+document.querySelectorAll(".dropdownBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const submenu = btn.nextElementSibling;
+        submenu.classList.toggle("hidden");
+    });
+});
+
+</script>
+
+</body>
+</html>

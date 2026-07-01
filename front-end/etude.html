@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Programme d'étude</title>
+
+<style>
+
+body{
+  font-family: Arial;
+  background:#f5f7fa;
+  padding:40px;
+}
+
+.session{
+  background:white;
+  padding:20px;
+  margin-bottom:20px;
+  border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Votre programme d'étude</h1>
+
+<div id="sessionsContainer"></div>
+
+<script>
+
+const sessions =
+  JSON.parse(
+    localStorage.getItem("studySessions")
+  ) || [];
+
+console.log("Sessions :", sessions);
+
+const container =
+  document.getElementById("sessionsContainer");
+
+// =============================
+// AUCUNE SESSION
+// =============================
+
+if (sessions.length === 0) {
+
+  container.innerHTML = `
+    <p>
+      Aucun programme trouvé.
+    </p>
+  `;
+
+}
+
+// =============================
+// AFFICHAGE DES SEANCES
+// =============================
+
+sessions.forEach(session => {
+//console.log(session.lesson);
+console.log(
+  JSON.stringify(
+    session.lesson,
+    null,
+    2
+  )
+);
+//=====================
+  container.innerHTML += `
+
+    <div class="session">
+
+      <h2>
+        Séance ${session.session_order}
+      </h2>
+
+      <h3>
+        ${session.theme}
+      </h3>
+
+      <p>
+        <strong>Leçon :</strong><br>
+        ${session.lesson}
+      </p>
+
+      <p>
+        <strong>Exercice :</strong><br>
+        ${session.exercise}
+      </p>
+
+      <p>
+        <strong>Mini Quiz :</strong><br>
+        ${session.mini_quiz}
+      </p>
+
+    </div>
+
+  `;
+
+});
+
+</script>
+</body>
+</html>
