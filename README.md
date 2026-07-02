@@ -22,6 +22,8 @@ application/
 
 ## Démarrage rapide
 
+**Prérequis : Node.js 20.19+** (obligatoire pour Vite 8). Vérifiez avec `node -v`.
+
 ### 1. Back-end
 
 ```bash
@@ -42,6 +44,15 @@ npm run dev
 ```
 
 App : http://localhost:5173
+
+> **Important :** lancez toujours `npm install` et `npm run dev` **depuis le dossier `front-end/`**, pas depuis la racine `application/` (sinon erreur `ENOENT package.json`).
+
+### Compte admin (première installation)
+
+```bash
+cd back-end
+npm run create-admin
+```
 
 ## Base de données
 
