@@ -9,7 +9,40 @@ function syncProgramStorage(profile) {
   }
 }
 
+async function syncStudySessions(profile) {
+  if (profile?.role === "admin" || !profile?.has_chosen_program) {
+    return;
+  }
+
+  const raw = localStorage.getItem("studySessions");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return;
+      }
+    } catch {
+      // continue
+    }
+  }
+
+  try {
+    const data = await api.getCurrentProgram();
+    if (data.sessions?.length) {
+      localStorage.setItem("studySessions", JSON.stringify(data.sessions));
+      if (data.programId) {
+        localStorage.setItem("programId", String(data.programId));
+      }
+    }
+  } catch {
+    // pas de programme en base
+  }
+}
+
 export function getJourneyPath(profile) {
+  if (profile?.role === "admin") {
+    return "/admin";
+  }
   if (!profile?.has_passed_test) {
     return "/test";
   }
@@ -38,6 +71,7 @@ export function AuthProvider({ children }) {
     try {
       const profile = await api.me();
       syncProgramStorage(profile);
+      await syncStudySessions(profile);
       setUser(profile);
       return profile;
     } catch {
@@ -68,6 +102,7 @@ export function AuthProvider({ children }) {
       hasPassedTest: Boolean(user?.has_passed_test),
       hasChosenProgram: Boolean(user?.has_chosen_program),
       hasSavedAgenda: Boolean(user?.has_saved_agenda),
+      isAdmin: user?.role === "admin",
       journeyPath: getJourneyPath(user),
       login: (newToken) => {
         if (newToken) {

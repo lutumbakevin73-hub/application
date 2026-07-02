@@ -15,7 +15,7 @@ export default function Header({ onMenuToggle }) {
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
       <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          {token && (
+          {token && user?.role !== "admin" && (
             <button
               type="button"
               onClick={onMenuToggle}

@@ -62,6 +62,19 @@ export const api = {
 
   getCurrentProgram: () => request("/api/study/current"),
 
+  getLessonProgress: () => request("/api/study/progress"),
+
+  saveLessonProgress: (body) =>
+    request("/api/study/progress", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+
+  getMyAgenda: async () => {
+    const data = await request("/api/agenda/current");
+    return { agenda: data.agenda ?? null };
+  },
+
   createStudyProgram: (body) =>
     request("/api/study/register", {
       method: "POST",
@@ -92,7 +105,26 @@ export const api = {
       body: JSON.stringify(body)
     }),
 
-  googleAuthUrl: `${API_BASE}/auth/google`
+  googleAuthUrl: `${API_BASE}/auth/google`,
+
+  adminDashboard: () => request("/api/admin/dashboard"),
+
+  adminUsers: () => request("/api/admin/users"),
+
+  adminAgendas: ({
+    agendaPage = 1,
+    agendaLimit = 5,
+    sessionPage = 1,
+    sessionLimit = 10
+  } = {}) => {
+    const params = new URLSearchParams({
+      agendaPage: String(agendaPage),
+      agendaLimit: String(agendaLimit),
+      sessionPage: String(sessionPage),
+      sessionLimit: String(sessionLimit)
+    });
+    return request(`/api/admin/agendas?${params}`);
+  }
 };
 
 export function parseJwt(token) {

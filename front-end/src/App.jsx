@@ -1,12 +1,19 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Layout from "./components/Layout";
+import AdminShell from "./components/AdminShell";
+import { AdminRedirect } from "./components/AdminRedirect";
 import {
   RequireAgendaSaved,
+  RequireAdmin,
   RequireProgramChosen,
   RequireProgramPending,
   TestPendingOnly
 } from "./components/ProtectedRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAgendas from "./pages/admin/AdminAgendas";
+import AdminSessions from "./pages/admin/AdminSessions";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -23,8 +30,29 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <AdminShell />
+              </RequireAdmin>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="agendas" element={<AdminAgendas />} />
+            <Route path="sessions" element={<AdminSessions />} />
+          </Route>
+
           <Route element={<Layout />}>
-            <Route index element={<Home />} />
+            <Route
+              index
+              element={
+                <AdminRedirect>
+                  <Home />
+                </AdminRedirect>
+              }
+            />
             <Route path="register" element={<Register />} />
             <Route path="login" element={<Login />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
@@ -33,41 +61,51 @@ export default function App() {
             <Route
               path="test"
               element={
-                <TestPendingOnly>
-                  <TestIntro />
-                </TestPendingOnly>
+                <AdminRedirect>
+                  <TestPendingOnly>
+                    <TestIntro />
+                  </TestPendingOnly>
+                </AdminRedirect>
               }
             />
             <Route
               path="quiz"
               element={
-                <TestPendingOnly>
-                  <Quiz />
-                </TestPendingOnly>
+                <AdminRedirect>
+                  <TestPendingOnly>
+                    <Quiz />
+                  </TestPendingOnly>
+                </AdminRedirect>
               }
             />
             <Route
               path="plan"
               element={
-                <RequireProgramPending>
-                  <StudyPlan />
-                </RequireProgramPending>
+                <AdminRedirect>
+                  <RequireProgramPending>
+                    <StudyPlan />
+                  </RequireProgramPending>
+                </AdminRedirect>
               }
             />
             <Route
               path="agenda"
               element={
-                <RequireProgramChosen>
-                  <Agenda />
-                </RequireProgramChosen>
+                <AdminRedirect>
+                  <RequireProgramChosen>
+                    <Agenda />
+                  </RequireProgramChosen>
+                </AdminRedirect>
               }
             />
             <Route
               path="sessions"
               element={
-                <RequireAgendaSaved>
-                  <StudySessions />
-                </RequireAgendaSaved>
+                <AdminRedirect>
+                  <RequireAgendaSaved>
+                    <StudySessions />
+                  </RequireAgendaSaved>
+                </AdminRedirect>
               }
             />
             <Route path="*" element={<Navigate to="/" replace />} />

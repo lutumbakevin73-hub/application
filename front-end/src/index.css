@@ -123,7 +123,37 @@ body {
 }
 
 .progress-fill {
-  @apply h-full rounded-full bg-gradient-to-r from-udbl-blue to-udbl-green transition-all duration-500;
+  @apply h-full rounded-full bg-gradient-to-r from-udbl-blue to-udbl-green;
+}
+
+.course-phase-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.course-phase-step--active {
+  background: linear-gradient(135deg, #2d5aa3, #1e4080);
+  color: white;
+}
+
+.course-phase-step--done {
+  background: rgba(46, 139, 87, 0.12);
+  color: #1f6b40;
+}
+
+.course-phase-step--idle {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.course-hint-card {
+  border-left: 4px solid #2d5aa3;
+  background: linear-gradient(90deg, rgba(45, 90, 163, 0.06), transparent);
 }
 
 .auth-shell {
@@ -146,8 +176,65 @@ body {
   @apply border-udbl-blue bg-udbl-blue/5 ring-2 ring-udbl-blue/20;
 }
 
-.motto {
-  @apply text-xs uppercase tracking-widest text-udbl-green font-semibold;
+.course-quiz-option {
+  @apply flex w-full cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 p-4 text-left transition;
+  @apply hover:border-udbl-blue/40 hover:bg-udbl-blue/5;
+}
+
+.course-quiz-option--selected {
+  @apply border-udbl-blue bg-udbl-blue/10 ring-2 ring-udbl-blue/20;
+}
+
+.course-quiz-option-letter {
+  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-udbl-blue;
+}
+
+.course-quiz-option--selected .course-quiz-option-letter {
+  @apply bg-udbl-blue text-white;
+}
+
+.course-section-icon {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-udbl-blue/10 text-udbl-blue;
+}
+
+.code-editor {
+  @apply overflow-hidden rounded-xl border border-slate-800 bg-[#1e1e2e] shadow-inner;
+}
+
+.code-editor-toolbar {
+  @apply flex items-center justify-between border-b border-white/10 px-4 py-2 text-xs;
+}
+
+.code-editor-lang {
+  @apply rounded-md bg-udbl-blue/20 px-2 py-0.5 font-semibold uppercase tracking-wide text-sky-200;
+}
+
+.code-editor-hint {
+  @apply text-slate-400;
+}
+
+.code-editor-shell {
+  @apply flex max-h-[360px] overflow-hidden;
+}
+
+.code-editor-gutter {
+  @apply shrink-0 overflow-hidden border-r border-white/10 bg-[#181825] px-3 py-3 text-right font-mono text-xs leading-6 text-slate-500 select-none;
+}
+
+.code-editor-line-number {
+  @apply block h-6;
+}
+
+.code-editor-input {
+  @apply min-h-[240px] w-full resize-none border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 text-slate-100 outline-none;
+}
+
+.code-editor-input::placeholder {
+  color: rgb(100 116 139);
+}
+
+.code-editor-input:disabled {
+  @apply cursor-not-allowed opacity-60;
 }
 
 .sidebar {
@@ -191,10 +278,6 @@ body {
 
 .sidebar-icon {
   @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-udbl-blue;
-}
-
-.sidebar-footer {
-  @apply p-4 border-t border-slate-100 mt-auto;
 }
 
 .sidebar-menu-btn {

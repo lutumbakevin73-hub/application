@@ -14,7 +14,6 @@ export default function AuthCard({ title, subtitle, children }) {
           </div>
           <h2 className="text-2xl font-bold">{title}</h2>
           {subtitle && <p className="mt-2 text-sm text-blue-100">{subtitle}</p>}
-          <p className="motto mt-3 text-green-200">Solidarité · Innovation · Travail</p>
         </div>
         <div className="card-body space-y-4">{children}</div>
       </div>

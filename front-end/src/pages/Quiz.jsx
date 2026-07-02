@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import CodeEditor from "../components/CodeEditor";
 import { useAuth } from "../context/AuthContext";
 
 function analyzeResults(results) {
@@ -222,11 +223,11 @@ export default function Quiz() {
             ))}
           </div>
         ) : (
-          <textarea
-            className="input-field font-mono text-sm min-h-[180px]"
+          <CodeEditor
             value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Écris ton code ici..."
+            onChange={setCode}
+            language={q.language}
+            disabled={loading}
           />
         )}
 

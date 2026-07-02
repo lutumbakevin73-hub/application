@@ -44,9 +44,20 @@ export default function ProtectedRoute({ children }) {
   return children;
 }
 
+function redirectAdmin(user) {
+  if (user?.role === "admin") {
+    return "/admin";
+  }
+  return null;
+}
+
 export function TestPendingOnly({ children }) {
   return (
-    <AuthGate redirectIf={(user) => (user?.has_passed_test ? getJourneyPath(user) : null)}>
+    <AuthGate
+      redirectIf={(user) =>
+        redirectAdmin(user) || (user?.has_passed_test ? getJourneyPath(user) : null)
+      }
+    >
       {children}
     </AuthGate>
   );
@@ -56,6 +67,8 @@ export function RequireProgramPending({ children }) {
   return (
     <AuthGate
       redirectIf={(user) => {
+        const admin = redirectAdmin(user);
+        if (admin) return admin;
         if (!user?.has_passed_test) {
           return "/test";
         }
@@ -74,6 +87,8 @@ export function RequireProgramChosen({ children }) {
   return (
     <AuthGate
       redirectIf={(user) => {
+        const admin = redirectAdmin(user);
+        if (admin) return admin;
         if (!user?.has_passed_test) {
           return "/test";
         }
@@ -92,6 +107,8 @@ export function RequireAgendaSaved({ children }) {
   return (
     <AuthGate
       redirectIf={(user) => {
+        const admin = redirectAdmin(user);
+        if (admin) return admin;
         if (!user?.has_passed_test) {
           return "/test";
         }
@@ -113,6 +130,8 @@ export function RequireAgendaPending({ children }) {
   return (
     <AuthGate
       redirectIf={(user) => {
+        const admin = redirectAdmin(user);
+        if (admin) return admin;
         if (!user?.has_passed_test) {
           return "/test";
         }
@@ -121,6 +140,21 @@ export function RequireAgendaPending({ children }) {
         }
         if (user?.has_saved_agenda) {
           return "/sessions";
+        }
+        return null;
+      }}
+    >
+      {children}
+    </AuthGate>
+  );
+}
+
+export function RequireAdmin({ children }) {
+  return (
+    <AuthGate
+      redirectIf={(user) => {
+        if (user?.role !== "admin") {
+          return "/";
         }
         return null;
       }}

@@ -6,7 +6,7 @@ import Logo from "./Logo";
 import { useAuth } from "../context/AuthContext";
 
 export default function Layout() {
-  const { token } = useAuth();
+  const { token, isAdmin } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -14,7 +14,7 @@ export default function Layout() {
       <Header onMenuToggle={() => setMobileOpen((v) => !v)} />
 
       <div className="flex flex-1 min-h-0">
-        {token && (
+        {token && !isAdmin && (
           <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
         )}
 
@@ -28,7 +28,6 @@ export default function Layout() {
               <Logo size="sm" showText={false} />
             </div>
             <p className="font-medium text-udbl-blue">UDBL Learning</p>
-            <p className="motto mt-1">Solidarité · Innovation · Travail</p>
             <p className="mt-2 text-xs">Université Don Bosco de Lubumbashi</p>
           </footer>
         </div>

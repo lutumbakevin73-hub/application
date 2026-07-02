@@ -1,34 +1,130 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
 
-const SESSION_COUNTS = {
-  prog1: 2,
-  prog2: 3,
-  prog3: 5,
-  prog4: 7
-};
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  try {
+    return new Date(`${dateStr}T12:00:00`).toLocaleDateString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return "—";
+  return timeStr.slice(0, 5);
+}
 
 export default function Agenda() {
-  const navigate = useNavigate();
-  const { user, markAgendaSaved, refreshProfile } = useAuth();
-  const program = localStorage.getItem("selectedProgram") || "prog2";
-  const count = SESSION_COUNTS[program] || 3;
+  const { hasSavedAgenda, markAgendaSaved, refreshProfile } = useAuth();
 
-  const initialSessions = useMemo(
-    () => Array.from({ length: count }, () => ({ date: "", time: "" })),
-    [count]
+  const [loading, setLoading] = useState(true);
+  const [mode, setMode] = useState("form");
+  const [courseSessions, setCourseSessions] = useState([]);
+  const [program, setProgram] = useState(
+    () => localStorage.getItem("selectedProgram") || "prog2"
   );
-
-  const [sessions, setSessions] = useState(initialSessions);
+  const [sessions, setSessions] = useState([]);
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+
+      try {
+        let courses = [];
+        const raw = localStorage.getItem("studySessions");
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              courses = parsed;
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        if (courses.length === 0) {
+          try {
+            const data = await api.getCurrentProgram();
+            courses = data.sessions || [];
+            if (courses.length > 0) {
+              localStorage.setItem("studySessions", JSON.stringify(courses));
+              if (data.programId) {
+                localStorage.setItem("programId", String(data.programId));
+              }
+            }
+          } catch {
+            // pas de programme en base
+          }
+        }
+
+        if (cancelled) return;
+        setCourseSessions(courses);
+
+        const count = Math.max(courses.length, 1);
+        const emptySlots = Array.from({ length: count }, (_, i) => ({
+          date: "",
+          time: "",
+          theme: courses[i]?.theme || null
+        }));
+
+        if (hasSavedAgenda) {
+          try {
+            const { agenda } = await api.getMyAgenda();
+            if (cancelled) return;
+            if (agenda) {
+              setProgram(agenda.program || program);
+              setPhone(agenda.phone || "");
+              setSessions(
+                Array.isArray(agenda.sessions) && agenda.sessions.length > 0
+                  ? agenda.sessions
+                  : emptySlots
+              );
+              setMode("view");
+              return;
+            }
+            await refreshProfile();
+          } catch {
+            // route indisponible ou session expirée
+          }
+        }
+
+        setSessions(emptySlots);
+        setMode("form");
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || "Impossible de charger l'agenda.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasSavedAgenda]);
 
   const filled = sessions.filter((s) => s.date && s.time).length;
-  const progress = (filled / sessions.length) * 100;
+  const progress = sessions.length ? (filled / sessions.length) * 100 : 0;
 
   function updateSession(index, field, value) {
     setSessions((prev) =>
@@ -38,30 +134,102 @@ export default function Agenda() {
 
   async function save() {
     setError("");
+
+    if (!phone.trim()) {
+      setError("Indiquez votre numéro de téléphone pour les rappels SMS.");
+      return;
+    }
+
+    if (sessions.some((s) => !s.date || !s.time)) {
+      setError("Remplissez la date et l'heure de chaque séance.");
+      return;
+    }
+
+    const payload = sessions.map((s, i) => ({
+      date: s.date,
+      time: s.time,
+      theme: s.theme || courseSessions[i]?.theme || null
+    }));
+
+    setSaving(true);
     try {
-      await api.saveAgenda({ phone, program, sessions, userId: user?.id });
+      await api.saveAgenda({ phone: phone.trim(), program, sessions: payload });
       markAgendaSaved();
       await refreshProfile();
-      setSuccess(true);
+      setSessions(payload);
+      setMode("view");
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
-  if (success) {
+  function startEdit() {
+    setMode("form");
+  }
+
+  if (loading) {
     return (
-      <div className="page-container max-w-lg">
-        <div className="card card-body text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-udbl-green/15 text-3xl">
-            ✓
-          </div>
-          <h2 className="text-2xl font-bold text-udbl-blue">Merci !</h2>
-          <p className="mt-2 text-udbl-muted">
-            Votre agenda est enregistré. Un rappel SMS vous sera envoyé avant chaque séance.
-          </p>
-          <button onClick={() => navigate("/sessions")} className="btn-primary mt-6">
-            Voir mes séances
+      <div className="page-container flex min-h-[40vh] items-center justify-center">
+        <p className="text-udbl-muted">Chargement de l'agenda...</p>
+      </div>
+    );
+  }
+
+  if (mode === "view") {
+    return (
+      <div className="page-container max-w-3xl">
+        <PageHeader
+          badge="Agenda"
+          title="Mon agenda"
+          subtitle={`Programme ${program} — ${sessions.length} séance(s) planifiée(s)`}
+        />
+
+        <div className="mb-6 flex flex-wrap gap-3">
+          <Link to="/sessions" className="btn-primary">
+            Voir mes cours
+          </Link>
+          <button type="button" onClick={startEdit} className="btn-outline">
+            Modifier l'agenda
           </button>
+        </div>
+
+        <div className="card card-body mb-6">
+          <p className="text-sm text-udbl-muted">Rappels SMS</p>
+          <p className="font-medium text-udbl-blue">{phone || "—"}</p>
+        </div>
+
+        <div className="space-y-4">
+          {sessions.map((session, index) => (
+            <article key={index} className="card card-body">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-udbl-blue/10 text-sm font-bold text-udbl-blue">
+                  {index + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  {session.theme && (
+                    <p className="font-semibold text-udbl-blue">{session.theme}</p>
+                  )}
+                  <p className="mt-1 text-udbl-dark">{formatDate(session.date)}</p>
+                  <p className="text-sm text-udbl-muted">à {formatTime(session.time)}</p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (courseSessions.length === 0) {
+    return (
+      <div className="page-container max-w-lg text-center">
+        <div className="card card-body">
+          <p className="text-udbl-muted">Aucun programme de cours trouvé.</p>
+          <Link to="/plan" className="link mt-4 inline-block">
+            Choisir un programme
+          </Link>
         </div>
       </div>
     );
@@ -72,12 +240,14 @@ export default function Agenda() {
       <PageHeader
         badge="Étape 3"
         title="Planification des séances"
-        subtitle={`Programme ${program} — ${count} séance(s)`}
+        subtitle={`Programme ${program} — ${sessions.length} séance(s) à planifier`}
       />
 
       <div className="card card-body mb-6">
-        <div className="flex justify-between text-sm text-udbl-muted mb-2">
-          <span>{filled} / {sessions.length} séance(s) planifiée(s)</span>
+        <div className="mb-2 flex justify-between text-sm text-udbl-muted">
+          <span>
+            {filled} / {sessions.length} séance(s) planifiée(s)
+          </span>
           <span>{Math.round(progress)}%</span>
         </div>
         <div className="progress-track">
@@ -88,13 +258,20 @@ export default function Agenda() {
       <div className="space-y-4">
         {sessions.map((session, index) => (
           <div key={index} className="card card-body">
-            <h2 className="font-bold text-udbl-blue mb-4 flex items-center gap-2">
+            <h2 className="mb-4 flex items-center gap-2 font-bold text-udbl-blue">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-udbl-blue/10 text-sm">
                 {index + 1}
               </span>
-              Séance {index + 1}
+              <span>
+                Séance {index + 1}
+                {courseSessions[index]?.theme && (
+                  <span className="ml-2 text-sm font-normal text-udbl-muted">
+                    — {courseSessions[index].theme}
+                  </span>
+                )}
+              </span>
             </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium">Date</label>
                 <input
@@ -133,8 +310,13 @@ export default function Agenda() {
         <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       )}
 
-      <button onClick={save} className="btn-primary mt-6 w-full">
-        Enregistrer l'agenda
+      <button
+        type="button"
+        onClick={save}
+        disabled={saving}
+        className="btn-primary mt-6 w-full"
+      >
+        {saving ? "Enregistrement..." : "Enregistrer l'agenda"}
       </button>
     </div>
   );

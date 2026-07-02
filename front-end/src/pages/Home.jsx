@@ -23,7 +23,6 @@ export default function Home() {
                 Créer un compte
               </Link>
             </div>
-            <p className="motto mt-8">Solidarité · Innovation · Travail</p>
           </div>
 
           <div className="relative bg-gradient-to-br from-udbl-blue to-udbl-green p-10 flex items-center justify-center order-1 lg:order-2 min-h-[280px]">

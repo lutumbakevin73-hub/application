@@ -144,10 +144,6 @@ export default function Sidebar({ mobileOpen, onClose }) {
             );
           })}
         </nav>
-
-        <div className="sidebar-footer">
-          <p className="motto text-center">Solidarité · Innovation · Travail</p>
-        </div>
       </aside>
     </>
   );

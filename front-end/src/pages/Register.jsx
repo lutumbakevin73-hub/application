@@ -24,7 +24,7 @@ export default function Register() {
   }
 
   return (
-    <AuthCard title="Inscription" subtitle="Rejoignez UDBL Learning">
+    <AuthCard title="Inscription" subtitle="Créez un compte étudiant pour accéder au parcours d'apprentissage">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium">Nom complet</label>
