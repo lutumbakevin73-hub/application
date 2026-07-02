@@ -1,45 +1,122 @@
 import { getDb, insertAndGetId } from "../config/database.js";
+import { getSessionCount, normalizeProgramId } from "../config/programs.js";
 import { generateStudyProgram } from "./llm.service.js";
+
+function normalizeQuestion(value) {
+  if (!value || typeof value !== "object") {
+    return {
+      question: "Question de révision",
+      options: ["A", "B", "C", "D"],
+      answer: "A",
+      explanation: ""
+    };
+  }
+
+  return {
+    question: value.question || "Question de révision",
+    options: Array.isArray(value.options) ? value.options : ["A", "B", "C", "D"],
+    answer:
+      value.answer ||
+      value.correct_answer ||
+      value.correctAnswer ||
+      value.options?.[0] ||
+      "A",
+    explanation: value.explanation || value.feedback || ""
+  };
+}
 
 function normalizeMiniQuiz(value) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
+    if (Array.isArray(value.questions) && value.questions.length > 0) {
+      return {
+        title: value.title || "Quiz de fin de leçon",
+        passing_score: Number(value.passing_score) || 70,
+        questions: value.questions.map(normalizeQuestion).slice(0, 5)
+      };
+    }
+
     return {
-      question: value.question || "Question de révision",
-      options: Array.isArray(value.options)
-        ? value.options
-        : ["A", "B", "C", "D"],
-      answer:
-        value.answer ||
-        value.correct_answer ||
-        value.correctAnswer ||
-        value.options?.[0] ||
-        "A"
+      title: value.title || "Quiz de fin de leçon",
+      passing_score: Number(value.passing_score) || 70,
+      questions: [normalizeQuestion(value)]
     };
   }
 
   if (typeof value === "string" && value.trim()) {
     return {
-      question: value.trim(),
-      options: ["A", "B", "C", "D"],
-      answer: "A"
+      title: "Quiz de fin de leçon",
+      passing_score: 70,
+      questions: [
+        {
+          question: value.trim(),
+          options: ["A", "B", "C", "D"],
+          answer: "A",
+          explanation: ""
+        }
+      ]
     };
   }
 
   return {
-    question: "Question de révision",
-    options: ["A", "B", "C", "D"],
-    answer: "A"
+    title: "Quiz de fin de leçon",
+    passing_score: 70,
+    questions: [normalizeQuestion(null)]
   };
 }
 
 function normalizeExercise(value) {
   if (typeof value === "string") {
-    return value.trim() || "Exercice à compléter.";
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return {
+        title: "Exercice pratique",
+        instructions: "Exercice à compléter.",
+        hints: [],
+        starter_code: "",
+        expected_result: ""
+      };
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return normalizeExerciseObject(parsed);
+      }
+    } catch {
+      // plain text
+    }
+
+    return {
+      title: "Exercice pratique",
+      instructions: trimmed,
+      hints: [],
+      starter_code: "",
+      expected_result: ""
+    };
   }
+
   if (value && typeof value === "object") {
-    return JSON.stringify(value);
+    return normalizeExerciseObject(value);
   }
-  return "Exercice à compléter.";
+
+  return {
+    title: "Exercice pratique",
+    instructions: "Exercice à compléter.",
+    hints: [],
+    starter_code: "",
+    expected_result: ""
+  };
+}
+
+function normalizeExerciseObject(value) {
+  return {
+    title: value.title || "Exercice pratique",
+    instructions: value.instructions || value.description || "",
+    hints: Array.isArray(value.hints) ? value.hints : [],
+    starter_code: value.starter_code || value.starterCode || "",
+    expected_result: value.expected_result || value.expectedResult || "",
+    solution_approach: value.solution_approach || value.solutionApproach || ""
+  };
 }
 
 function normalizeLesson(value) {
@@ -77,24 +154,36 @@ function toJsonColumn(value) {
   return value;
 }
 
-async function buildSessions(themes) {
+async function buildSessions(themes, program) {
+  const sessionCount = getSessionCount(program);
   let rawSessions;
+
   try {
-    rawSessions = await generateStudyProgram(themes);
+    rawSessions = await generateStudyProgram(themes, sessionCount);
   } catch (err) {
     console.error("Génération IA impossible :", err.message);
     rawSessions = [];
   }
 
   const sessions = (Array.isArray(rawSessions) ? rawSessions : [])
-    .slice(0, 5)
+    .slice(0, sessionCount)
     .map(normalizeSession);
 
   if (sessions.length === 0) {
     throw new Error("Impossible de générer les séances du programme");
   }
 
-  return sessions;
+  return sessions.map((session, index) => {
+    const fallbackTheme = themes[index % themes.length] || `séance ${index + 1}`;
+    const label =
+      fallbackTheme.charAt(0).toUpperCase() + fallbackTheme.slice(1);
+
+    return {
+      ...session,
+      session_order: index + 1,
+      theme: session.theme || label
+    };
+  });
 }
 
 async function saveSessions(trx, programId, sessions) {
@@ -121,12 +210,14 @@ export async function getUserProgram(userId) {
 
   return {
     programId: program.id,
+    program: program.program || null,
     sessions,
     existing: true
   };
 }
 
-export async function createStudyProgram(userId, weakThemes) {
+export async function createStudyProgram(userId, weakThemes, programCode) {
+  const program = normalizeProgramId(programCode);
   const db = getDb();
   const numericUserId = Number(userId);
 
@@ -150,33 +241,43 @@ export async function createStudyProgram(userId, weakThemes) {
   if (existingSessions.length > 0 && existingProgram) {
     return {
       programId: existingProgram.id,
+      program: existingProgram.program || program,
       sessions: existingSessions,
       existing: true
     };
   }
 
   if (existingProgram) {
-    const sessions = await buildSessions(themes);
+    const sessions = await buildSessions(themes, program);
     await db.transaction(async (trx) => {
+      await trx("study_programs")
+        .where({ id: existingProgram.id })
+        .update({ program, weak_themes: toJsonColumn(themes) });
       await saveSessions(trx, existingProgram.id, sessions);
     });
-    return { programId: existingProgram.id, sessions, repaired: true };
+    return {
+      programId: existingProgram.id,
+      program,
+      sessions,
+      repaired: true
+    };
   }
 
-  const sessions = await buildSessions(themes);
+  const sessions = await buildSessions(themes, program);
 
   return db.transaction(async (trx) => {
     const programId = await insertAndGetId(
       "study_programs",
       {
         user_id: numericUserId,
-        weak_themes: toJsonColumn(themes)
+        weak_themes: toJsonColumn(themes),
+        program
       },
       trx
     );
 
     await saveSessions(trx, programId, sessions);
-    return { programId, sessions };
+    return { programId, program, sessions };
   });
 }
 

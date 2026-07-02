@@ -5,6 +5,7 @@ import studyRoutes from "./study.routes.js";
 import userRoutes from "./user.routes.js";
 import passwordRoutes from "./password.routes.js";
 import agendaRoutes from "./agenda.routes.js";
+import adminRoutes from "./admin.routes.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import * as authController from "../controllers/auth.controller.js";
 
@@ -15,6 +16,7 @@ router.use("/study", studyRoutes);
 router.use("/user", userRoutes);
 router.use("/password", passwordRoutes);
 router.use("/agenda", agendaRoutes);
+router.use("/admin", adminRoutes);
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);

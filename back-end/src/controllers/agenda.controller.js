@@ -1,10 +1,19 @@
 import * as agendaService from "../services/agenda.service.js";
 
+export async function getMyAgenda(req, res) {
+  try {
+    const agenda = await agendaService.getUserAgenda(req.user.id);
+    res.json({ success: true, agenda: agenda ?? null });
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Erreur serveur" });
+  }
+}
+
 export async function saveAgenda(req, res) {
   try {
-    const { phone, sessions, program, userId } = req.body;
+    const { phone, sessions, program } = req.body;
     const result = await agendaService.saveAgenda({
-      userId: userId || req.user?.id,
+      userId: req.user.id,
       phone,
       program,
       sessions

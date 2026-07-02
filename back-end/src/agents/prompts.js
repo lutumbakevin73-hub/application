@@ -1,3 +1,86 @@
+export function buildStudyPrompt(weakThemes, sessionCount) {
+  const themes = weakThemes.join(", ");
+  return `
+Tu es un professeur expert en programmation.
+
+Le cours doit ressembler à un véritable support pédagogique universitaire.
+
+Règles :
+- introduction : minimum 120 mots
+- detailed_explanation : minimum 250 mots
+- why_it_matters : minimum 100 mots
+- real_world_example : minimum 100 mots
+- summary : minimum 80 mots
+- Toujours fournir un exemple de code complet.
+- Les exercices doivent être progressifs, détaillés et liés aux lacunes de l'étudiant.
+- Chaque exercice est un objet structuré avec consignes, indices et code de départ.
+- Chaque séance se termine par un mini_quiz de 3 questions (4 options chacune, 1 bonne réponse).
+- Score de validation du quiz : 70% minimum (2 bonnes réponses sur 3).
+- Le champ exercise.instructions : minimum 80 mots, avec énoncé clair et action concrète.
+- Retourne uniquement du JSON valide.
+
+Crée un programme de renforcement personnalisé.
+
+Les notions faibles de l'étudiant sont :
+${themes}
+
+Produis EXACTEMENT ${sessionCount} séances (ni plus, ni moins).
+Répartis les notions faibles sur les ${sessionCount} séances : une séance peut approfondir une lacune ou combiner des notions proches.
+Numérote session_order de 1 à ${sessionCount}.
+
+Chaque séance doit contenir un champ "language" (C ou Python).
+Ne jamais utiliser JavaScript.
+
+Format attendu :
+
+[
+  {
+    "session_order": 1,
+    "theme": "Variables",
+    "language": "C",
+    "lesson": {
+      "introduction": "",
+      "why_it_matters": "",
+      "learning_objectives": [],
+      "definition": "",
+      "detailed_explanation": "",
+      "example_code": "",
+      "example_output": "",
+      "example_explanation": "",
+      "step_by_step": [],
+      "real_world_example": "",
+      "common_mistakes": "",
+      "summary": "",
+      "difficulty": "Débutant",
+      "estimated_duration": "20 minutes"
+    },
+    "exercise": {
+      "title": "",
+      "instructions": "",
+      "hints": ["", ""],
+      "starter_code": "",
+      "expected_result": "",
+      "solution_approach": ""
+    },
+    "mini_quiz": {
+      "title": "Quiz de validation",
+      "passing_score": 70,
+      "questions": [
+        {
+          "question": "",
+          "options": ["", "", "", ""],
+          "answer": "",
+          "explanation": ""
+        }
+      ]
+    }
+  }
+]
+
+Retourne UNIQUEMENT un JSON valide (tableau []).
+`;
+}
+
 export function buildTestPrompt() {
   return `
 Tu es un générateur de tests en programmation.
@@ -45,64 +128,6 @@ IMPORTANT :
 - Le JSON doit être un tableau []
 - Les id vont de 1 à 10
 - EXACTEMENT 10 questions
-`;
-}
-
-export function buildStudyPrompt(weakThemes) {
-  return `
-Tu es un professeur expert en programmation.
-
-Le cours doit ressembler à un véritable support pédagogique universitaire.
-
-Règles :
-- introduction : minimum 120 mots
-- detailed_explanation : minimum 250 mots
-- why_it_matters : minimum 100 mots
-- real_world_example : minimum 100 mots
-- summary : minimum 80 mots
-- Toujours fournir un exemple de code complet.
-- Les exercices doivent être progressifs.
-- Les quiz doivent comporter 4 choix.
-- Retourne uniquement du JSON valide.
-
-Crée un programme de renforcement personnalisé.
-
-Les notions faibles de l'étudiant sont :
-${weakThemes.join(", ")}
-
-Chaque séance doit contenir un champ "language" (C ou Python).
-Ne jamais utiliser JavaScript.
-
-Format attendu :
-
-[
-  {
-    "session_order": 1,
-    "theme": "Variables",
-    "language": "C",
-    "lesson": {
-      "introduction": "",
-      "why_it_matters": "",
-      "learning_objectives": [],
-      "definition": "",
-      "detailed_explanation": "",
-      "example_code": "",
-      "example_output": "",
-      "example_explanation": "",
-      "step_by_step": [],
-      "real_world_example": "",
-      "common_mistakes": "",
-      "summary": "",
-      "difficulty": "Débutant",
-      "estimated_duration": "20 minutes"
-    },
-    "exercise": "",
-    "mini_quiz": ""
-  }
-]
-
-Produis entre 3 et 5 séances maximum selon le nombre de notions faibles.
-Retourne UNIQUEMENT un JSON valide (tableau []).
 `;
 }
 

@@ -28,7 +28,7 @@ export async function findUserById(id) {
   return getDb()("users").where({ id }).first();
 }
 
-export async function register({ username, email, password, role }) {
+export async function register({ username, email, password }) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail || !password) {
     throw new Error("E-mail et mot de passe requis");
@@ -46,14 +46,14 @@ export async function register({ username, email, password, role }) {
     username: displayName,
     email: normalizedEmail,
     password: hashed,
-    role: role === "admin" ? "admin" : "user"
+    role: "user"
   });
 
   const user = {
     id,
     username: displayName,
     email: normalizedEmail,
-    role: role === "admin" ? "admin" : "user",
+    role: "user",
     has_passed_test: false
   };
 

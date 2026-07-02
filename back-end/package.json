@@ -8,7 +8,10 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "migrate": "knex migrate:latest",
-    "migrate:rollback": "knex migrate:rollback"
+    "migrate:rollback": "knex migrate:rollback",
+    "promote-admin": "node scripts/promote-admin.js",
+    "create-admin": "node scripts/create-admin.js",
+    "demote-student": "node scripts/demote-to-student.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

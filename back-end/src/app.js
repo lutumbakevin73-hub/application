@@ -10,9 +10,25 @@ import * as authController from "./controllers/auth.controller.js";
 export function createApp() {
   const app = express();
 
+  const allowedOrigins = new Set([
+    env.frontendUrl,
+    "http://localhost:5173",
+    "http://localhost:5174"
+  ]);
+
   app.use(
     cors({
-      origin: env.frontendUrl,
+      origin(origin, callback) {
+        if (
+          !origin ||
+          allowedOrigins.has(origin) ||
+          /^http:\/\/localhost:\d+$/.test(origin)
+        ) {
+          callback(null, true);
+          return;
+        }
+        callback(null, env.frontendUrl);
+      },
       credentials: true
     })
   );

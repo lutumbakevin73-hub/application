@@ -3,14 +3,17 @@ import { getPostLoginRedirect, getUserProgress } from "../services/progress.serv
 
 export async function register(req, res) {
   try {
-    const username = req.body.username || req.body.name;
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "E-mail et mot de passe requis" });
     }
 
-    const result = await authService.register({ username, email, password, role });
+    const result = await authService.register({
+      username: req.body.username || req.body.name,
+      email,
+      password
+    });
     res.json({ message: "Inscription réussie", ...result });
   } catch (err) {
     res.status(400).json({ message: err.message });

@@ -87,3 +87,29 @@ export async function requireAgendaSaved(req, res, next) {
     return res.status(500).json({ message: "Erreur serveur" });
   }
 }
+
+export async function requireAdmin(req, res, next) {
+  try {
+    const user = await findUserById(req.user.id);
+    if (user?.role !== "admin") {
+      return res.status(403).json({ message: "Accès réservé aux administrateurs." });
+    }
+    next();
+  } catch {
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+}
+
+export async function requireStudent(req, res, next) {
+  try {
+    const user = await findUserById(req.user.id);
+    if (user?.role === "admin") {
+      return res.status(403).json({
+        message: "Les comptes administrateur utilisent uniquement l'espace /admin."
+      });
+    }
+    next();
+  } catch {
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+}
