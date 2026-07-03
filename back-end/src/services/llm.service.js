@@ -80,11 +80,12 @@ export async function generateJson(prompt, model = "llama-3.3-70b-versatile") {
   return safeParseJson(text);
 }
 
-export async function generateTestQuestions() {
-  return generateJson(buildTestPrompt());
+export async function generateTestQuestions(language = "C") {
+  return generateJson(buildTestPrompt(language));
 }
 
-function buildFallbackProgram(weakThemes, sessionCount = 3) {
+function buildFallbackProgram(weakThemes, sessionCount = 3, language = "C") {
+  const lang = language === "Python" ? "Python" : "C";
   const themes =
     weakThemes?.length > 0
       ? weakThemes
@@ -93,7 +94,6 @@ function buildFallbackProgram(weakThemes, sessionCount = 3) {
   return Array.from({ length: sessionCount }, (_, index) => {
     const theme = themes[index % themes.length];
     const label = theme.charAt(0).toUpperCase() + theme.slice(1);
-    const lang = index % 2 === 0 ? "C" : "Python";
 
     const exampleCode =
       lang === "C"
@@ -181,17 +181,18 @@ function buildFallbackProgram(weakThemes, sessionCount = 3) {
   });
 }
 
-export async function generateStudyProgram(weakThemes, sessionCount = 3) {
+export async function generateStudyProgram(weakThemes, sessionCount = 3, language = "C") {
   const count = Math.max(1, Number(sessionCount) || 3);
+  const lang = language === "Python" ? "Python" : "C";
   try {
-    const parsed = await generateJson(buildStudyPrompt(weakThemes, count));
+    const parsed = await generateJson(buildStudyPrompt(weakThemes, count, lang));
     if (!Array.isArray(parsed) || parsed.length === 0) {
       throw new Error("Format de programme invalide");
     }
     return parsed.slice(0, count);
   } catch (err) {
     console.error("Groq programme étude → fallback local :", err.message);
-    return buildFallbackProgram(weakThemes, count);
+    return buildFallbackProgram(weakThemes, count, lang);
   }
 }
 

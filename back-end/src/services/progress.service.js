@@ -18,6 +18,9 @@ export function getPostLoginRedirect(user, progress) {
   if (user?.role === "admin") {
     return "/admin";
   }
+  if (!user?.preferred_language && !user?.has_passed_test) {
+    return "/language";
+  }
   if (!user?.has_passed_test) {
     return "/test";
   }

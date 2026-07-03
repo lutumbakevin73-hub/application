@@ -23,3 +23,12 @@ export async function completeTest(req, res) {
     res.status(500).json({ error: "Erreur serveur" });
   }
 }
+
+export async function chooseLanguage(req, res) {
+  try {
+    const language = await userService.setPreferredLanguage(req.user.id, req.body.language);
+    res.json({ success: true, preferred_language: language });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+}

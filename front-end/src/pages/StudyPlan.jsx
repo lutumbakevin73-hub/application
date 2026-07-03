@@ -81,9 +81,9 @@ export default function StudyPlan() {
   return (
     <div className="page-container">
       <PageHeader
-        badge="Étape 2"
+        badge={user?.preferred_language ? `Parcours ${user.preferred_language}` : "Étape 2"}
         title="Programme personnalisé"
-        subtitle={`Score au test : ${score}% — choisissez votre rythme (une seule fois)`}
+        subtitle={`Score au test : ${score}% — cours en ${user?.preferred_language || "votre langage"} (une seule fois)`}
       />
 
       <div className="mb-6 max-w-3xl rounded-xl border border-udbl-blue/20 bg-udbl-blue/5 px-4 py-3 text-sm text-udbl-dark">

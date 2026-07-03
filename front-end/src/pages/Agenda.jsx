@@ -35,6 +35,7 @@ export default function Agenda() {
   const [sessions, setSessions] = useState([]);
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
+  const [smsNotice, setSmsNotice] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -153,10 +154,27 @@ export default function Agenda() {
 
     setSaving(true);
     try {
-      await api.saveAgenda({ phone: phone.trim(), program, sessions: payload });
+      const data = await api.saveAgenda({ phone: phone.trim(), program, sessions: payload });
       markAgendaSaved();
       await refreshProfile();
       setSessions(payload);
+
+      if (data.welcomeSms?.sent) {
+        setSmsNotice(
+          "Un SMS récapitulatif de votre programme d'étude vient d'être envoyé sur votre téléphone."
+        );
+      } else if (data.welcomeSms?.skipped) {
+        setSmsNotice(
+          "Agenda enregistré. Le SMS de programme avait déjà été envoyé pour ce compte."
+        );
+      } else if (data.welcomeSms?.error) {
+        setSmsNotice(
+          `Agenda enregistré, mais le SMS n'a pas pu être envoyé : ${data.welcomeSms.error}`
+        );
+      } else {
+        setSmsNotice("");
+      }
+
       setMode("view");
     } catch (err) {
       setError(err.message);
@@ -194,6 +212,18 @@ export default function Agenda() {
             Modifier l'agenda
           </button>
         </div>
+
+        {smsNotice && (
+          <p
+            className={`mb-4 rounded-xl px-4 py-3 text-sm ${
+              smsNotice.includes("n'a pas pu")
+                ? "border border-amber-200 bg-amber-50 text-amber-900"
+                : "border border-udbl-green/20 bg-udbl-green/10 text-udbl-green-dark"
+            }`}
+          >
+            {smsNotice}
+          </p>
+        )}
 
         <div className="card card-body mb-6">
           <p className="text-sm text-udbl-muted">Rappels SMS</p>
@@ -299,11 +329,15 @@ export default function Agenda() {
         <label className="mb-1 block font-medium">Téléphone (rappels SMS)</label>
         <input
           type="tel"
-          placeholder="+243xxxxxxxxx"
+          placeholder="0854721056 ou +243854721056"
           className="input-field"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
+        <p className="mt-2 text-xs text-udbl-muted">
+          Horaires en heure de Lubumbashi (UTC+2). Un SMS récapitulatif est envoyé à la
+          première validation de l&apos;agenda.
+        </p>
       </div>
 
       {error && (

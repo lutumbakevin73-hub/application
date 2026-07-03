@@ -92,6 +92,7 @@ export async function login({ email, password }) {
       email: user.email,
       role: user.role,
       has_passed_test: Boolean(user.has_passed_test),
+      preferred_language: user.preferred_language || null,
       ...progress
     },
     redirect
@@ -112,6 +113,7 @@ export async function getPublicProfile(userId) {
     email: user.email,
     role: user.role,
     has_passed_test: Boolean(user.has_passed_test),
+    preferred_language: user.preferred_language || null,
     ...progress,
     created_at: user.created_at
   };

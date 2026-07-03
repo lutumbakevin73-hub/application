@@ -43,6 +43,9 @@ export function getJourneyPath(profile) {
   if (profile?.role === "admin") {
     return "/admin";
   }
+  if (!profile?.preferred_language && !profile?.has_passed_test) {
+    return "/language";
+  }
   if (!profile?.has_passed_test) {
     return "/test";
   }

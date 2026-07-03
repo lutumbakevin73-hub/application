@@ -20,9 +20,9 @@ export default function Login() {
       login(oauthToken);
       try {
         const profile = await api.me();
-        navigate(getJourneyPath(profile), { replace: true });
+        navigate(getJourneyPath(profile) || "/language", { replace: true });
       } catch {
-        navigate("/test", { replace: true });
+        navigate("/language", { replace: true });
       }
     }
 
@@ -36,7 +36,7 @@ export default function Login() {
     try {
       const data = await api.login(form);
       login(data.token);
-      navigate(data.redirect || "/test");
+      navigate(data.redirect || getJourneyPath(data.user) || "/language");
     } catch (err) {
       setError(err.message);
     } finally {

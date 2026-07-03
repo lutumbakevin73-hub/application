@@ -28,7 +28,8 @@ application/
 
 ```bash
 cd back-end
-cp .env.example .env   # puis éditez vos clés
+cp .env.example .env   # Windows : copy .env.example .env
+npm run setup-env      # crée .env avec toutes les clés de test (Groq, Google…)
 npm install
 npm start
 ```

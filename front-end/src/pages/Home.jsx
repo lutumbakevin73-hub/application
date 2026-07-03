@@ -1,7 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import Logo from "../components/Logo";
+import { getJourneyPath, useAuth } from "../context/AuthContext";
 
 export default function Home() {
+  const { token, user, profileLoading, journeyPath } = useAuth();
+
+  if (token && !profileLoading && user?.role !== "admin") {
+    return <Navigate to={journeyPath} replace />;
+  }
+
   return (
     <section className="page-container">
       <div className="card overflow-hidden">
@@ -12,8 +19,8 @@ export default function Home() {
               Apprenez la programmation avec un parcours sur mesure
             </h2>
             <p className="mt-4 text-udbl-muted text-lg leading-relaxed">
-              Évaluez votre niveau en C et Python, identifiez vos lacunes et
-              suivez un programme généré par l'intelligence artificielle.
+              Choisissez C ou Python dès votre connexion, passez un test de niveau dans ce
+              langage, puis suivez un programme généré par l&apos;intelligence artificielle.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/login" className="btn-primary">
@@ -37,7 +44,7 @@ export default function Home() {
 
       <div className="mt-8 grid sm:grid-cols-3 gap-4">
         {[
-          { title: "Test de niveau", desc: "10 questions QCM et pratiques", color: "blue" },
+          { title: "Test de niveau", desc: "C ou Python, selon votre choix", color: "blue" },
           { title: "Programme IA", desc: "Cours adaptés à vos lacunes", color: "green" },
           { title: "Agenda", desc: "Planifiez vos séances d'étude", color: "blue" }
         ].map((item) => (

@@ -1,4 +1,5 @@
 import { getDb } from "../config/database.js";
+import { normalizeLearningLanguage } from "../config/languages.js";
 import { generateTestQuestions } from "./llm.service.js";
 
 export async function saveQuestions(questions) {
@@ -16,12 +17,25 @@ export async function saveQuestions(questions) {
   }
 }
 
-export async function getQuestionsFromDB(limit = 10) {
+export async function getQuestionsFromDB(limit = 10, language = "C") {
   const db = getDb();
+  const lang = normalizeLearningLanguage(language) || "C";
   const randomFn = db.client.config.client === "mysql2" ? "RAND()" : "RANDOM()";
-  const rows = await db("questions").orderByRaw(randomFn).limit(limit);
+  const rows = await db("questions")
+    .where({ language: lang })
+    .orderByRaw(randomFn)
+    .limit(limit);
 
-  return rows.map((q) => ({
+  if (rows.length < limit) {
+    const fallbackRows = await db("questions").orderByRaw(randomFn).limit(limit);
+    return fallbackRows.map(mapQuestionRow);
+  }
+
+  return rows.map(mapQuestionRow);
+}
+
+function mapQuestionRow(q) {
+  return {
     id: q.id,
     type: q.type,
     language: q.language,
@@ -35,35 +49,42 @@ export async function getQuestionsFromDB(limit = 10) {
     correctAnswer: isNaN(Number(q.correct_answer))
       ? q.correct_answer
       : Number(q.correct_answer)
-  }));
+  };
 }
 
 const TEST_QUESTION_COUNT = 10;
 
-function normalizeQuestions(questions) {
+function normalizeQuestions(questions, language) {
+  const lang = normalizeLearningLanguage(language) || "C";
   if (!Array.isArray(questions)) {
     return [];
   }
 
   return questions.slice(0, TEST_QUESTION_COUNT).map((q, index) => ({
     ...q,
-    id: index + 1
+    id: index + 1,
+    language: normalizeLearningLanguage(q.language) || lang
   }));
 }
 
-export async function startTest() {
+export async function startTest(language) {
+  const lang = normalizeLearningLanguage(language);
+  if (!lang) {
+    throw new Error("Choisissez d'abord un langage (C ou Python).");
+  }
+
   try {
-    const questions = normalizeQuestions(await generateTestQuestions());
+    const questions = normalizeQuestions(await generateTestQuestions(lang), lang);
     if (questions.length < TEST_QUESTION_COUNT) {
       throw new Error("Nombre de questions insuffisant");
     }
     await saveQuestions(questions);
     return questions;
   } catch {
-    const fallback = await getQuestionsFromDB(TEST_QUESTION_COUNT);
+    const fallback = await getQuestionsFromDB(TEST_QUESTION_COUNT, lang);
     if (fallback.length >= TEST_QUESTION_COUNT) {
-      return normalizeQuestions(fallback);
+      return normalizeQuestions(fallback, lang);
     }
-    throw new Error("Aucune question disponible (ni IA ni base de données)");
+    throw new Error(`Aucune question disponible en ${lang} (ni IA ni base de données)`);
   }
 }

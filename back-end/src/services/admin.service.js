@@ -217,6 +217,35 @@ export async function listUsersWithProgress() {
   return Promise.all(users.map((user) => enrichUserProgress(db, user)));
 }
 
+export async function deleteUser(targetUserId, requestingAdminId) {
+  const db = getDb();
+  const userId = Number(targetUserId);
+
+  if (!Number.isFinite(userId) || userId <= 0) {
+    throw new Error("Identifiant utilisateur invalide.");
+  }
+
+  const user = await db("users").where({ id: userId }).first();
+  if (!user) {
+    throw new Error("Utilisateur introuvable.");
+  }
+
+  if (user.role === "admin") {
+    throw new Error("Impossible de supprimer un compte administrateur.");
+  }
+
+  if (Number(requestingAdminId) === userId) {
+    throw new Error("Vous ne pouvez pas supprimer votre propre compte.");
+  }
+
+  await db.transaction(async (trx) => {
+    await trx("agendas").where({ user_id: userId }).delete();
+    await trx("users").where({ id: userId }).delete();
+  });
+
+  return { id: userId };
+}
+
 export async function listAgendasWithUsers() {
   const db = getDb();
   const rows = await db("agendas")

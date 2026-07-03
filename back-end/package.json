@@ -11,7 +11,8 @@
     "migrate:rollback": "knex migrate:rollback",
     "promote-admin": "node scripts/promote-admin.js",
     "create-admin": "node scripts/create-admin.js",
-    "demote-student": "node scripts/demote-to-student.js"
+    "demote-student": "node scripts/demote-to-student.js",
+    "setup-env": "node scripts/setup-env.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

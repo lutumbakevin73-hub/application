@@ -405,7 +405,13 @@ export default function StudySessions() {
       programId,
       progress,
       activeSession.session_order,
-      passed
+      {
+        passed,
+        score,
+        correct,
+        total: questions.length,
+        theme: activeSession.theme
+      }
     );
 
     if (passed) {

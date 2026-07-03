@@ -51,12 +51,37 @@ function redirectAdmin(user) {
   return null;
 }
 
+export function LanguagePendingOnly({ children }) {
+  return (
+    <AuthGate
+      redirectIf={(user) => {
+        const admin = redirectAdmin(user);
+        if (admin) return admin;
+        if (user?.preferred_language || user?.has_passed_test) {
+          return getJourneyPath(user);
+        }
+        return null;
+      }}
+    >
+      {children}
+    </AuthGate>
+  );
+}
+
 export function TestPendingOnly({ children }) {
   return (
     <AuthGate
-      redirectIf={(user) =>
-        redirectAdmin(user) || (user?.has_passed_test ? getJourneyPath(user) : null)
-      }
+      redirectIf={(user) => {
+        const admin = redirectAdmin(user);
+        if (admin) return admin;
+        if (user?.has_passed_test) {
+          return getJourneyPath(user);
+        }
+        if (!user?.preferred_language) {
+          return "/language";
+        }
+        return null;
+      }}
     >
       {children}
     </AuthGate>
@@ -70,7 +95,7 @@ export function RequireProgramPending({ children }) {
         const admin = redirectAdmin(user);
         if (admin) return admin;
         if (!user?.has_passed_test) {
-          return "/test";
+          return getJourneyPath(user);
         }
         if (user?.has_chosen_program) {
           return user.has_saved_agenda ? "/sessions" : "/agenda";
@@ -90,7 +115,7 @@ export function RequireProgramChosen({ children }) {
         const admin = redirectAdmin(user);
         if (admin) return admin;
         if (!user?.has_passed_test) {
-          return "/test";
+          return getJourneyPath(user);
         }
         if (!user?.has_chosen_program) {
           return "/plan";
@@ -110,7 +135,7 @@ export function RequireAgendaSaved({ children }) {
         const admin = redirectAdmin(user);
         if (admin) return admin;
         if (!user?.has_passed_test) {
-          return "/test";
+          return getJourneyPath(user);
         }
         if (!user?.has_chosen_program) {
           return "/plan";
@@ -133,7 +158,7 @@ export function RequireAgendaPending({ children }) {
         const admin = redirectAdmin(user);
         if (admin) return admin;
         if (!user?.has_passed_test) {
-          return "/test";
+          return getJourneyPath(user);
         }
         if (!user?.has_chosen_program) {
           return "/plan";

@@ -1,7 +1,8 @@
-export function buildStudyPrompt(weakThemes, sessionCount) {
+export function buildStudyPrompt(weakThemes, sessionCount, language = "C") {
   const themes = weakThemes.join(", ");
+  const lang = language === "Python" ? "Python" : "C";
   return `
-Tu es un professeur expert en programmation.
+Tu es un professeur expert en programmation ${lang}.
 
 Le cours doit ressembler à un véritable support pédagogique universitaire.
 
@@ -11,15 +12,15 @@ Règles :
 - why_it_matters : minimum 100 mots
 - real_world_example : minimum 100 mots
 - summary : minimum 80 mots
-- Toujours fournir un exemple de code complet.
+- Toujours fournir un exemple de code complet en ${lang}.
 - Les exercices doivent être progressifs, détaillés et liés aux lacunes de l'étudiant.
-- Chaque exercice est un objet structuré avec consignes, indices et code de départ.
+- Chaque exercice est un objet structuré avec consignes, indices et code de départ en ${lang}.
 - Chaque séance se termine par un mini_quiz de 3 questions (4 options chacune, 1 bonne réponse).
 - Score de validation du quiz : 70% minimum (2 bonnes réponses sur 3).
 - Le champ exercise.instructions : minimum 80 mots, avec énoncé clair et action concrète.
 - Retourne uniquement du JSON valide.
 
-Crée un programme de renforcement personnalisé.
+Crée un programme de renforcement personnalisé UNIQUEMENT en ${lang}.
 
 Les notions faibles de l'étudiant sont :
 ${themes}
@@ -28,8 +29,8 @@ Produis EXACTEMENT ${sessionCount} séances (ni plus, ni moins).
 Répartis les notions faibles sur les ${sessionCount} séances : une séance peut approfondir une lacune ou combiner des notions proches.
 Numérote session_order de 1 à ${sessionCount}.
 
-Chaque séance doit contenir un champ "language" (C ou Python).
-Ne jamais utiliser JavaScript.
+Chaque séance doit avoir "language": "${lang}" (identique pour toutes les séances).
+Ne jamais utiliser JavaScript ni l'autre langage (${lang === "C" ? "Python" : "C"}).
 
 Format attendu :
 
@@ -37,7 +38,7 @@ Format attendu :
   {
     "session_order": 1,
     "theme": "Variables",
-    "language": "C",
+    "language": "${lang}",
     "lesson": {
       "introduction": "",
       "why_it_matters": "",
@@ -81,13 +82,14 @@ Retourne UNIQUEMENT un JSON valide (tableau []).
 `;
 }
 
-export function buildTestPrompt() {
+export function buildTestPrompt(language = "C") {
+  const lang = language === "Python" ? "Python" : "C";
   return `
 Tu es un générateur de tests en programmation.
 
 Génère EXACTEMENT 10 questions (ni plus, ni moins).
 
-Langages : C et Python.
+Langage UNIQUE : ${lang} uniquement.
 
 Répartition obligatoire :
 - 5 questions QCM (type "qcm")
@@ -96,14 +98,14 @@ Répartition obligatoire :
 Thèmes à couvrir parmi :
 variables, conditions, boucles, tableaux, listes, fonctions
 
-Chaque langage (C et Python) doit apparaître au moins une fois.
+Toutes les questions doivent être en ${lang}. N'utilise pas d'autre langage.
 
 Format QCM :
 
 {
   "id": 1,
   "type": "qcm",
-  "language": "C",
+  "language": "${lang}",
   "theme": "variables",
   "question": "Question ici",
   "options": ["A", "B", "C", "D"],
@@ -115,7 +117,7 @@ Format pratique :
 {
   "id": 6,
   "type": "pratique",
-  "language": "Python",
+  "language": "${lang}",
   "theme": "boucles",
   "question": "Écris un programme...",
   "correctAnswer": "solution attendue"
@@ -128,6 +130,7 @@ IMPORTANT :
 - Le JSON doit être un tableau []
 - Les id vont de 1 à 10
 - EXACTEMENT 10 questions
+- language = "${lang}" pour chaque question
 `;
 }
 

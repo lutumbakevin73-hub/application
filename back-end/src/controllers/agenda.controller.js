@@ -20,7 +20,9 @@ export async function saveAgenda(req, res) {
     });
     res.json({
       success: true,
-      message: "Agenda enregistré",
+      message: result.welcomeSms?.sent
+        ? "Agenda enregistré — SMS de confirmation envoyé"
+        : "Agenda enregistré",
       ...result
     });
   } catch (err) {

@@ -1,4 +1,6 @@
 import * as adminService from "../services/admin.service.js";
+import * as progressAnalyticsService from "../services/progress-analytics.service.js";
+import { getDb } from "../config/database.js";
 
 export async function getDashboard(req, res) {
   try {
@@ -17,6 +19,50 @@ export async function listUsers(req, res) {
   } catch (err) {
     console.error("Admin users:", err);
     res.status(500).json({ message: err.message || "Erreur serveur" });
+  }
+}
+
+export async function deleteUser(req, res) {
+  try {
+    const result = await adminService.deleteUser(req.params.id, req.user.id);
+    res.json({ success: true, ...result, message: "Utilisateur supprimé." });
+  } catch (err) {
+    console.error("Admin delete user:", err);
+    const status =
+      err.message === "Utilisateur introuvable." ||
+      err.message === "Identifiant utilisateur invalide."
+        ? 404
+        : 400;
+    res.status(status).json({ message: err.message || "Erreur serveur" });
+  }
+}
+
+export async function listProgress(req, res) {
+  try {
+    const students = await progressAnalyticsService.listStudentsLessonProgress(getDb());
+    res.json({ success: true, students });
+  } catch (err) {
+    console.error("Admin progress list:", err);
+    res.status(500).json({ message: err.message || "Erreur serveur" });
+  }
+}
+
+export async function getProgressDetail(req, res) {
+  try {
+    const detail = await progressAnalyticsService.getStudentLessonProgressDetail(
+      getDb(),
+      req.params.userId
+    );
+
+    if (!detail) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    res.json({ success: true, ...detail });
+  } catch (err) {
+    console.error("Admin progress detail:", err);
+    const status = err.message?.includes("administrateur") ? 400 : 500;
+    res.status(status).json({ message: err.message || "Erreur serveur" });
   }
 }
 

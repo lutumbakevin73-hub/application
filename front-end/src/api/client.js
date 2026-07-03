@@ -51,6 +51,12 @@ export const api = {
 
   me: () => request("/api/me"),
 
+  chooseLanguage: (language) =>
+    request("/api/user/choose-language", {
+      method: "POST",
+      body: JSON.stringify({ language })
+    }),
+
   startTest: () =>
     request("/api/test/start", { method: "POST", body: "{}" }),
 
@@ -110,6 +116,13 @@ export const api = {
   adminDashboard: () => request("/api/admin/dashboard"),
 
   adminUsers: () => request("/api/admin/users"),
+
+  adminDeleteUser: (userId) =>
+    request(`/api/admin/users/${userId}`, { method: "DELETE" }),
+
+  adminProgressList: () => request("/api/admin/progress"),
+
+  adminProgressDetail: (userId) => request(`/api/admin/progress/${userId}`),
 
   adminAgendas: ({
     agendaPage = 1,

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
+import { useDialog } from "../../context/DialogContext";
 import PageHeader from "../../components/PageHeader";
 import StudentProgressBar from "../../components/admin/StudentProgressBar";
-
 const STEP_BADGE = {
   test: "badge-blue",
   programme: "badge-blue",
@@ -11,9 +11,11 @@ const STEP_BADGE = {
 };
 
 export default function AdminUsers() {
+  const { confirm } = useDialog();
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     api
@@ -23,16 +25,35 @@ export default function AdminUsers() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function handleDelete(user) {
+    const confirmed = await confirm({
+      title: "Supprimer cet utilisateur ?",
+      message: `Le compte de « ${user.username} » (${user.email}) sera supprimé définitivement.\n\nProgramme, agenda et progression seront effacés.`,
+      confirmLabel: "Supprimer",
+      cancelLabel: "Annuler",
+      variant: "danger"
+    });
+
+    if (!confirmed) {
+      return;
+    }
+    setDeletingId(user.id);
+    setError("");
+
+    try {
+      await api.adminDeleteUser(user.id);
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+    } catch (err) {
+      setError(err.message || "Impossible de supprimer cet utilisateur.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const students = users.filter((user) => user.role !== "admin");
 
   if (loading) {
     return <p className="text-udbl-muted">Chargement des utilisateurs...</p>;
-  }
-
-  if (error) {
-    return (
-      <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-    );
   }
 
   return (
@@ -43,9 +64,13 @@ export default function AdminUsers() {
         subtitle={`${students.length} étudiant(s) · ${users.length} compte(s) au total`}
       />
 
+      {error && (
+        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+      )}
+
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-left text-sm">
+          <table className="w-full min-w-[1024px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-udbl-muted">
               <tr>
                 <th className="px-4 py-3 font-semibold">Étudiant</th>
@@ -53,12 +78,13 @@ export default function AdminUsers() {
                 <th className="px-4 py-3 font-semibold">Étape actuelle</th>
                 <th className="px-4 py-3 font-semibold">Programme</th>
                 <th className="px-4 py-3 font-semibold">Inscription</th>
+                <th className="px-4 py-3 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-udbl-muted">
+                  <td colSpan={6} className="px-4 py-8 text-center text-udbl-muted">
                     Aucun étudiant inscrit pour le moment.
                   </td>
                 </tr>
@@ -101,6 +127,16 @@ export default function AdminUsers() {
                       {user.created_at
                         ? new Date(user.created_at).toLocaleDateString("fr-FR")
                         : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(user)}
+                        disabled={deletingId === user.id}
+                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+                      >
+                        {deletingId === user.id ? "Suppression..." : "Supprimer"}
+                      </button>
                     </td>
                   </tr>
                 ))

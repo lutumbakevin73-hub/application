@@ -8,6 +8,9 @@ router.use(authMiddleware, requireAdmin);
 
 router.get("/dashboard", adminController.getDashboard);
 router.get("/users", adminController.listUsers);
+router.delete("/users/:id", adminController.deleteUser);
+router.get("/progress", adminController.listProgress);
+router.get("/progress/:userId", adminController.getProgressDetail);
 router.get("/agendas", adminController.listAgendas);
 
 export default router;

@@ -133,11 +133,12 @@ function normalizeLesson(value) {
   return { introduction: "Cours à compléter." };
 }
 
-function normalizeSession(session, index) {
+function normalizeSession(session, index, language = "C") {
+  const lang = language === "Python" ? "Python" : "C";
   return {
     session_order: Number(session.session_order) || index + 1,
     theme: String(session.theme || `Séance ${index + 1}`),
-    language: session.language || (index % 2 === 0 ? "C" : "Python"),
+    language: session.language === "Python" || session.language === "C" ? session.language : lang,
     lesson: normalizeLesson(session.lesson),
     exercise: normalizeExercise(session.exercise),
     mini_quiz: normalizeMiniQuiz(session.mini_quiz)
@@ -154,12 +155,13 @@ function toJsonColumn(value) {
   return value;
 }
 
-async function buildSessions(themes, program) {
+async function buildSessions(themes, program, language = "C") {
   const sessionCount = getSessionCount(program);
+  const lang = language === "Python" ? "Python" : "C";
   let rawSessions;
 
   try {
-    rawSessions = await generateStudyProgram(themes, sessionCount);
+    rawSessions = await generateStudyProgram(themes, sessionCount, lang);
   } catch (err) {
     console.error("Génération IA impossible :", err.message);
     rawSessions = [];
@@ -167,7 +169,7 @@ async function buildSessions(themes, program) {
 
   const sessions = (Array.isArray(rawSessions) ? rawSessions : [])
     .slice(0, sessionCount)
-    .map(normalizeSession);
+    .map((session, index) => normalizeSession(session, index, lang));
 
   if (sessions.length === 0) {
     throw new Error("Impossible de générer les séances du programme");
@@ -192,6 +194,7 @@ async function saveSessions(trx, programId, sessions) {
       program_id: programId,
       session_order: session.session_order,
       theme: session.theme,
+      language: session.language || "C",
       lesson: toJsonColumn(session.lesson),
       exercise: toJsonColumn(session.exercise),
       mini_quiz: toJsonColumn(session.mini_quiz)
@@ -235,6 +238,8 @@ export async function createStudyProgram(userId, weakThemes, programCode) {
       ? weakThemes.map(String)
       : ["variables", "conditions", "boucles"];
 
+  const learningLanguage = user.preferred_language === "Python" ? "Python" : "C";
+
   const { program: existingProgram, sessions: existingSessions } =
     await findProgramWithSessions(db, numericUserId);
 
@@ -248,7 +253,7 @@ export async function createStudyProgram(userId, weakThemes, programCode) {
   }
 
   if (existingProgram) {
-    const sessions = await buildSessions(themes, program);
+    const sessions = await buildSessions(themes, program, learningLanguage);
     await db.transaction(async (trx) => {
       await trx("study_programs")
         .where({ id: existingProgram.id })
@@ -263,7 +268,7 @@ export async function createStudyProgram(userId, weakThemes, programCode) {
     };
   }
 
-  const sessions = await buildSessions(themes, program);
+  const sessions = await buildSessions(themes, program, learningLanguage);
 
   return db.transaction(async (trx) => {
     const programId = await insertAndGetId(
@@ -301,6 +306,7 @@ export async function getProgramSessions(programId) {
   return rows.map((row) => ({
     session_order: row.session_order,
     theme: row.theme,
+    language: row.language || "C",
     lesson: parseStoredField(row.lesson),
     exercise: parseStoredField(row.exercise),
     mini_quiz: parseStoredField(row.mini_quiz)

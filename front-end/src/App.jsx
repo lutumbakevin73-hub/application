@@ -1,19 +1,23 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { DialogProvider } from "./context/DialogContext";
 import Layout from "./components/Layout";
 import AdminShell from "./components/AdminShell";
 import { AdminRedirect } from "./components/AdminRedirect";
 import {
+  LanguagePendingOnly,
   RequireAgendaSaved,
   RequireAdmin,
   RequireProgramChosen,
   RequireProgramPending,
   TestPendingOnly
 } from "./components/ProtectedRoute";
+import ChooseLanguage from "./pages/ChooseLanguage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAgendas from "./pages/admin/AdminAgendas";
 import AdminSessions from "./pages/admin/AdminSessions";
+import AdminProgress from "./pages/admin/AdminProgress";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -28,7 +32,8 @@ import Agenda from "./pages/Agenda";
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <DialogProvider>
+        <BrowserRouter>
         <Routes>
           <Route
             path="/admin"
@@ -40,6 +45,7 @@ export default function App() {
           >
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="progress" element={<AdminProgress />} />
             <Route path="agendas" element={<AdminAgendas />} />
             <Route path="sessions" element={<AdminSessions />} />
           </Route>
@@ -58,6 +64,16 @@ export default function App() {
             <Route path="forgot-password" element={<ForgotPassword />} />
             <Route path="reset-password" element={<ResetPassword />} />
 
+            <Route
+              path="language"
+              element={
+                <AdminRedirect>
+                  <LanguagePendingOnly>
+                    <ChooseLanguage />
+                  </LanguagePendingOnly>
+                </AdminRedirect>
+              }
+            />
             <Route
               path="test"
               element={
@@ -112,6 +128,7 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      </DialogProvider>
     </AuthProvider>
   );
 }

@@ -14,5 +14,9 @@ export const env = {
   emailPass: process.env.EMAIL_PASS,
   twilioSid: process.env.TWILIO_SID,
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
-  twilioPhone: process.env.TWILIO_PHONE
+  twilioPhone: process.env.TWILIO_PHONE,
+  appTimezone: process.env.APP_TIMEZONE || "Africa/Lubumbashi",
+  appTimezoneOffset: process.env.APP_TIMEZONE_OFFSET || "+02:00",
+  /** En test : renvoie le SMS programme à chaque sauvegarde d'agenda (même numéro partagé). */
+  smsTestMode: process.env.SMS_TEST_MODE === "true"
 };

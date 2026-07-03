@@ -1,20 +1,34 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import JourneyProgress from "./JourneyProgress";
 import Logo from "./Logo";
 import { useAuth } from "../context/AuthContext";
+import { PUBLIC_PATHS } from "../config/journey";
 
 export default function Layout() {
-  const { token, isAdmin } = useAuth();
+  const { token, isAdmin, hasSavedAgenda, profileLoading } = useAuth();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isPublicPath = PUBLIC_PATHS.includes(location.pathname);
+  const showSidebar = Boolean(token && !isAdmin && hasSavedAgenda);
+  const showJourneyProgress = Boolean(
+    token && !isAdmin && !hasSavedAgenda && !profileLoading && !isPublicPath
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onMenuToggle={() => setMobileOpen((v) => !v)} />
+      <Header
+        onMenuToggle={() => setMobileOpen((v) => !v)}
+        showSidebar={showSidebar}
+      />
+
+      {showJourneyProgress && <JourneyProgress />}
 
       <div className="flex flex-1 min-h-0">
-        {token && !isAdmin && (
+        {showSidebar && (
           <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
         )}
 

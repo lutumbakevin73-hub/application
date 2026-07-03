@@ -2,7 +2,9 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import CodeEditor from "../components/CodeEditor";
+import ModalOverlay from "../components/ui/ModalOverlay";
 import { useAuth } from "../context/AuthContext";
+import { useDialog } from "../context/DialogContext";
 
 function analyzeResults(results) {
   const summary = {
@@ -35,6 +37,7 @@ function analyzeResults(results) {
 export default function Quiz() {
   const navigate = useNavigate();
   const { user, markTestPassed } = useAuth();
+  const { alert } = useDialog();
   const questions = useMemo(() => {
     const raw = localStorage.getItem("currentTest");
     if (!raw) return [];
@@ -77,11 +80,23 @@ export default function Quiz() {
 
     try {
       if (q.type === "qcm") {
-        if (selected === "") return alert("Choisissez une réponse");
+        if (selected === "") {
+          await alert({
+            title: "Réponse manquante",
+            message: "Choisissez une réponse avant de continuer."
+          });
+          return;
+        }
         userAnswer = Number(selected);
         isCorrect = userAnswer === q.correctAnswer;
       } else {
-        if (!code.trim()) return alert("Écris ton code avant de soumettre");
+        if (!code.trim()) {
+          await alert({
+            title: "Code vide",
+            message: "Écrivez votre code avant de soumettre."
+          });
+          return;
+        }
         userAnswer = code.trim();
         correction = await api.correctCode({
           language: q.language,
@@ -107,7 +122,11 @@ export default function Quiz() {
       setAnswers(nextAnswers);
       setModal({ isCorrect, count: nextAnswers.filter((a) => a.correct).length });
     } catch (err) {
-      alert(err.message);
+      await alert({
+        title: "Erreur",
+        message: err.message,
+        variant: "danger"
+      });
     } finally {
       setLoading(false);
     }
@@ -241,8 +260,8 @@ export default function Quiz() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-udbl-dark/50 p-4 backdrop-blur-sm">
-          <div className="card card-body max-w-sm w-full text-center animate-in">
+        <ModalOverlay labelledBy="quiz-feedback-title">
+          <div className="text-center">
             <div
               className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl ${
                 modal.isCorrect ? "bg-green-100" : "bg-red-100"
@@ -250,7 +269,10 @@ export default function Quiz() {
             >
               {modal.isCorrect ? "✓" : "✗"}
             </div>
-            <h3 className={`text-xl font-bold ${modal.isCorrect ? "text-udbl-green-dark" : "text-red-600"}`}>
+            <h3
+              id="quiz-feedback-title"
+              className={`text-xl font-bold ${modal.isCorrect ? "text-udbl-green-dark" : "text-red-600"}`}
+            >
               {modal.isCorrect ? "Bonne réponse !" : "Mauvaise réponse"}
             </h3>
             <p className="mt-2 text-udbl-muted">
@@ -260,7 +282,7 @@ export default function Quiz() {
               Continuer
             </button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

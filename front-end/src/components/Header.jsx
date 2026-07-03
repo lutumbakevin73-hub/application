@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
 import { useAuth } from "../context/AuthContext";
 
-export default function Header({ onMenuToggle }) {
+export default function Header({ onMenuToggle, showSidebar = false }) {
   const { token, logout, user } = useAuth();
   const navigate = useNavigate();
 
@@ -15,7 +15,7 @@ export default function Header({ onMenuToggle }) {
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
       <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          {token && user?.role !== "admin" && (
+          {showSidebar && (
             <button
               type="button"
               onClick={onMenuToggle}
