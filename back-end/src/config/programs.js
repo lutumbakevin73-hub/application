@@ -26,3 +26,11 @@ export function normalizeProgramId(program) {
   }
   return "prog2";
 }
+
+export function getRecommendedProgram(score) {
+  const value = Number(score);
+  if (value >= 80) return "prog1";
+  if (value >= 60) return "prog2";
+  if (value >= 40) return "prog3";
+  return "prog4";
+}

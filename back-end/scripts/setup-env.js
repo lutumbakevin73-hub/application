@@ -30,10 +30,6 @@ JWT_SECRET=ma_chaine_ultra_secrete_12345
 # Groq (IA) — renseignez votre clé
 GROQ_API_KEY=
 
-# Google OAuth (optionnel)
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-
 # E-mail (optionnel)
 EMAIL_USER=tonemail@gmail.com
 EMAIL_PASS=mot_de_passe_application_google

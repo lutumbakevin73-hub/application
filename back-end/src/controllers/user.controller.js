@@ -1,4 +1,5 @@
 import { findUserById } from "../services/auth.service.js";
+import * as testResultsService from "../services/test-results.service.js";
 import * as userService from "../services/user.service.js";
 
 export async function completeTest(req, res) {
@@ -13,11 +14,24 @@ export async function completeTest(req, res) {
       return res.status(404).json({ error: "Utilisateur introuvable" });
     }
     if (user.has_passed_test) {
-      return res.status(403).json({ message: "Vous avez déjà passé le test de niveau." });
+      const existing = await testResultsService.getTestResult(req.user.id);
+      if (existing) {
+        return res.json({ success: true, testResult: existing });
+      }
     }
 
-    await userService.markTestComplete(req.user.id);
-    res.json({ success: true });
+    const testResult = await testResultsService.saveTestResult(req.user.id, req.body);
+    res.json({ success: true, testResult });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || "Erreur serveur" });
+  }
+}
+
+export async function getMyTestResult(req, res) {
+  try {
+    const testResult = await testResultsService.getTestResult(req.user.id);
+    res.json({ success: true, testResult });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });

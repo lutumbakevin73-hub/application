@@ -20,22 +20,47 @@ function formatDate(value) {
   }
 }
 
-function SummaryCards({ summary }) {
+function JourneySteps({ steps = [] }) {
+  if (!steps.length) return null;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {steps.map((step) => (
+        <div
+          key={step.key}
+          className={`rounded-xl border px-4 py-3 ${
+            step.done ? "border-udbl-green/30 bg-udbl-green/5" : "border-slate-200 bg-slate-50"
+          }`}
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-udbl-muted">
+            {step.label}
+          </p>
+          <p className="mt-2 font-bold text-udbl-blue">{step.detail}</p>
+          <p className="mt-1 text-xs text-udbl-muted">{step.done ? "✓ Atteint" : "En attente"}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SummaryCards({ summary, entryTest }) {
   const cards = [
+    {
+      label: "Test d'entrée",
+      value: entryTest ? `${entryTest.score} %` : "—",
+      hint: entryTest
+        ? `${entryTest.correct_count}/${entryTest.total_count} bonnes réponses`
+        : "Non passé"
+    },
     {
       label: "Leçons validées",
       value: `${summary.lessons_completed}/${summary.lessons_total}`,
       hint: `${summary.completion_percent}% du parcours`
     },
     {
-      label: "Quiz tentés",
-      value: summary.lessons_attempted,
-      hint: "Résultats par leçon uniquement"
-    },
-    {
-      label: "Meilleur score moyen",
+      label: "Score moyen leçons",
       value: summary.average_best_score != null ? `${summary.average_best_score} %` : "—",
-      hint: "Moyenne des meilleurs scores"
+      hint: "Meilleurs scores par quiz"
     }
   ];
 
@@ -123,7 +148,7 @@ export default function AdminProgress() {
       <PageHeader
         badge="Admin"
         title="Progression des étudiants"
-        subtitle="Résultats détaillés par leçon — le test initial n'est pas affiché ici"
+        subtitle="Test d'entrée, programme assigné et résultats détaillés par leçon"
       />
 
       {error && (
@@ -156,15 +181,12 @@ export default function AdminProgress() {
                     <p className={`text-xs ${active ? "text-white/80" : "text-udbl-muted"}`}>
                       {item.user.email}
                     </p>
-                    {item.has_course ? (
-                      <p className={`mt-2 text-xs ${active ? "text-white/90" : "text-udbl-dark"}`}>
-                        {item.summary.lessons_completed}/{item.summary.lessons_total} leçons
-                      </p>
-                    ) : (
-                      <p className={`mt-2 text-xs ${active ? "text-white/80" : "text-udbl-muted"}`}>
-                        Pas encore de cours
-                      </p>
-                    )}
+                    <p className={`mt-2 text-xs ${active ? "text-white/90" : "text-udbl-dark"}`}>
+                      Test : {item.entry_test_score != null ? `${item.entry_test_score}%` : "—"}
+                      {item.has_course
+                        ? ` · ${item.summary.lessons_completed}/${item.summary.lessons_total} leçons`
+                        : ""}
+                    </p>
                   </button>
                 );
               })
@@ -177,7 +199,7 @@ export default function AdminProgress() {
             <p className="text-udbl-muted">Chargement du détail...</p>
           ) : !detail ? (
             <div className="card card-body text-sm text-udbl-muted">
-              Sélectionnez un étudiant pour afficher ses résultats par leçon.
+              Sélectionnez un étudiant pour afficher sa progression complète.
             </div>
           ) : (
             <>
@@ -206,21 +228,59 @@ export default function AdminProgress() {
                 </div>
               </div>
 
-              {!detail.has_course ? (
-                <div className="card card-body text-sm text-udbl-muted">
-                  Cet étudiant n&apos;a pas encore de programme de cours. Les résultats détaillés
-                  apparaîtront ici après chaque quiz de leçon.
+              <div className="card card-body">
+                <h3 className="mb-4 font-bold text-udbl-blue">Parcours global</h3>
+                <JourneySteps steps={detail.progress_overview?.journey || []} />
+              </div>
+
+              <SummaryCards summary={detail.summary} entryTest={detail.entry_test} />
+
+              {detail.entry_test ? (
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <div className="card card-body">
+                    <h3 className="mb-1 font-bold text-udbl-blue">Résultats du test d&apos;entrée</h3>
+                    <p className="mb-4 text-xs text-udbl-muted">
+                      Score global : {detail.entry_test.score}% —{" "}
+                      {formatDate(detail.entry_test.completed_at)}
+                    </p>
+                    <LessonScoreChart
+                      labels={detail.entry_test.chart?.labels || []}
+                      scores={detail.entry_test.chart?.scores || []}
+                      completed={detail.entry_test.chart?.labels?.map(() => true) || []}
+                    />
+                    {detail.entry_test.weak_themes?.length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {detail.entry_test.weak_themes.map((theme) => (
+                          <span key={theme} className="badge-blue">
+                            {theme}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="card card-body">
+                    <h3 className="mb-1 font-bold text-udbl-blue">Progression globale</h3>
+                    <p className="mb-4 text-xs text-udbl-muted">
+                      Test d&apos;entrée puis scores des leçons
+                    </p>
+                    <LessonTrendChart
+                      labels={detail.progress_overview?.combined?.labels || []}
+                      scores={detail.progress_overview?.combined?.scores || []}
+                    />
+                  </div>
                 </div>
               ) : (
-                <>
-                  <SummaryCards summary={detail.summary} />
+                <div className="card card-body text-sm text-udbl-muted">
+                  Cet étudiant n&apos;a pas encore passé le test d&apos;entrée.
+                </div>
+              )}
 
+              {detail.has_course ? (
+                <>
                   <div className="grid gap-6 xl:grid-cols-2">
                     <div className="card card-body">
-                      <h3 className="mb-1 font-bold text-udbl-blue">Meilleurs scores par leçon</h3>
-                      <p className="mb-4 text-xs text-udbl-muted">
-                        Score le plus élevé obtenu à chaque quiz de leçon
-                      </p>
+                      <h3 className="mb-1 font-bold text-udbl-blue">Scores par leçon</h3>
                       <LessonScoreChart
                         labels={detail.chart.labels}
                         scores={detail.chart.best_scores}
@@ -229,10 +289,7 @@ export default function AdminProgress() {
                     </div>
 
                     <div className="card card-body">
-                      <h3 className="mb-1 font-bold text-udbl-blue">Évolution des scores</h3>
-                      <p className="mb-4 text-xs text-udbl-muted">
-                        Progression du meilleur score d&apos;une leçon à l&apos;autre
-                      </p>
+                      <h3 className="mb-1 font-bold text-udbl-blue">Évolution des leçons</h3>
                       <LessonTrendChart
                         labels={detail.chart.labels}
                         scores={detail.chart.best_scores}
@@ -243,9 +300,6 @@ export default function AdminProgress() {
                   <div className="card overflow-hidden">
                     <div className="border-b border-slate-100 px-4 py-3">
                       <h3 className="font-bold text-udbl-blue">Détail par leçon</h3>
-                      <p className="text-xs text-udbl-muted">
-                        Tentatives, scores et validation — sans le test de départ
-                      </p>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[880px] text-left text-sm">
@@ -257,7 +311,6 @@ export default function AdminProgress() {
                             <th className="px-4 py-3 font-semibold">Meilleur score</th>
                             <th className="px-4 py-3 font-semibold">Dernier score</th>
                             <th className="px-4 py-3 font-semibold">Tentatives</th>
-                            <th className="px-4 py-3 font-semibold">Historique</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -283,27 +336,6 @@ export default function AdminProgress() {
                                 {lesson.lastScore != null ? `${lesson.lastScore} %` : "—"}
                               </td>
                               <td className="px-4 py-3">{lesson.attemptCount || 0}</td>
-                              <td className="px-4 py-3">
-                                {lesson.attempts?.length ? (
-                                  <div className="space-y-1">
-                                    {lesson.attempts.map((attempt, index) => (
-                                      <p key={`${lesson.session_order}-${index}`} className="text-xs text-udbl-muted">
-                                        #{index + 1} —{" "}
-                                        {attempt.score != null ? `${attempt.score} %` : "—"}
-                                        {attempt.correct != null && attempt.total != null
-                                          ? ` (${attempt.correct}/${attempt.total})`
-                                          : ""}
-                                        {" — "}
-                                        {attempt.passed ? "réussi" : "échec"}
-                                        {" — "}
-                                        {formatDate(attempt.at)}
-                                      </p>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-udbl-muted">Aucune tentative</span>
-                                )}
-                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -311,6 +343,10 @@ export default function AdminProgress() {
                     </div>
                   </div>
                 </>
+              ) : (
+                <div className="card card-body text-sm text-udbl-muted">
+                  Programme de cours pas encore généré pour cet étudiant.
+                </div>
               )}
             </>
           )}

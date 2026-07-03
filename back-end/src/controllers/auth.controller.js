@@ -1,5 +1,4 @@
 import * as authService from "../services/auth.service.js";
-import { getPostLoginRedirect, getUserProgress } from "../services/progress.service.js";
 
 export async function register(req, res) {
   try {
@@ -46,13 +45,4 @@ export async function me(req, res) {
   } catch {
     res.status(500).json({ message: "Erreur serveur" });
   }
-}
-
-export async function googleCallback(req, res) {
-  const token = authService.generateToken(req.user);
-  const progress = await getUserProgress(req.user.id);
-  const redirect = getPostLoginRedirect(req.user, progress);
-  res.redirect(
-    `${process.env.FRONTEND_URL || "http://localhost:5173"}${redirect}?token=${token}`
-  );
 }

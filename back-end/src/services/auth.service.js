@@ -72,7 +72,7 @@ export async function login({ email, password }) {
   }
 
   if (!user.password) {
-    throw new Error("Ce compte utilise la connexion Google.");
+    throw new Error("Mot de passe non défini pour ce compte.");
   }
 
   const valid = await bcrypt.compare(password, user.password);
@@ -117,21 +117,4 @@ export async function getPublicProfile(userId) {
     ...progress,
     created_at: user.created_at
   };
-}
-
-export async function findOrCreateGoogleUser(profile) {
-  const email = normalizeEmail(profile.emails?.[0]?.value);
-  const username = profile.displayName || email.split("@")[0];
-  let user = await findUserByEmail(email);
-
-  if (!user) {
-    const id = await insertAndGetId("users", {
-      username,
-      email,
-      role: "user"
-    });
-    user = await findUserById(id);
-  }
-
-  return user;
 }

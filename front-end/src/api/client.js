@@ -87,11 +87,13 @@ export const api = {
       body: JSON.stringify(body)
     }),
 
-  completeTest: (userId) =>
+  completeTest: (payload) =>
     request("/api/user/complete-test", {
       method: "POST",
-      body: JSON.stringify({ userId })
+      body: JSON.stringify(payload)
     }),
+
+  getTestResult: () => request("/api/user/test-result"),
 
   saveAgenda: (body) =>
     request("/api/agenda/save", {

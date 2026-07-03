@@ -154,10 +154,22 @@ export default function Quiz() {
     }
 
     try {
-      await api.completeTest(user.id);
+      const response = await api.completeTest({
+        userId: user.id,
+        score: evaluation.percentage,
+        correct_count: evaluation.correct,
+        total_count: evaluation.total,
+        weak_themes: themes,
+        by_theme: evaluation.byTheme,
+        by_language: evaluation.byLanguage,
+        details: evaluation.details
+      });
       markTestPassed();
       localStorage.setItem("userScore", String(evaluation.percentage));
       localStorage.setItem("weakThemes", JSON.stringify(themes));
+      if (response.testResult?.recommended_program) {
+        localStorage.setItem("selectedProgram", response.testResult.recommended_program);
+      }
     } catch (err) {
       console.error(err);
       setProgramError(err.message || "Impossible d'enregistrer la fin du test.");
@@ -197,7 +209,7 @@ export default function Quiz() {
             <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{programError}</p>
           )}
           <button onClick={() => navigate("/plan")} className="btn-primary mt-8">
-            Choisir mon programme
+            Voir mon programme sur mesure
           </button>
         </div>
       </div>

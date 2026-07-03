@@ -1,45 +1,88 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { PROGRAMS, getRecommendedProgram } from "../config/programs";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
 
+function readLocalTestData() {
+  const score = Number(localStorage.getItem("userScore") || 0);
+  let weakThemes = [];
+  try {
+    const raw = localStorage.getItem("weakThemes");
+    weakThemes = raw ? JSON.parse(raw) : [];
+  } catch {
+    weakThemes = [];
+  }
+  return { score, weakThemes };
+}
+
 export default function StudyPlan() {
   const navigate = useNavigate();
   const { user, markProgramChosen, refreshProfile } = useAuth();
-  const score = Number(localStorage.getItem("userScore") || 50);
-
-  const weakThemes = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("weakThemes");
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    } catch {
-      // ignore invalid localStorage
-    }
-    return ["variables", "conditions", "boucles", "fonctions"];
-  }, []);
-
-  const recommended = getRecommendedProgram(score);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [testResult, setTestResult] = useState(null);
 
-  async function chooseProgram(programId) {
-    const isTooShort = score < 40 && (programId === "prog1" || programId === "prog2");
-    const isTooLong = score >= 80 && (programId === "prog3" || programId === "prog4");
-
-    if (isTooShort || isTooLong) {
-      setError("Ce programme n'est pas adapté à votre niveau.");
+  useEffect(() => {
+    if (user?.has_chosen_program) {
+      navigate("/agenda", { replace: true });
       return;
     }
 
+    let cancelled = false;
+
+    async function load() {
+      setLoadingData(true);
+      try {
+        const data = await api.getTestResult();
+        if (!cancelled && data.testResult) {
+          setTestResult(data.testResult);
+          localStorage.setItem("userScore", String(data.testResult.score));
+          localStorage.setItem("weakThemes", JSON.stringify(data.testResult.weak_themes || []));
+          localStorage.setItem("selectedProgram", data.testResult.recommended_program);
+        }
+      } catch {
+        if (!cancelled) {
+          const local = readLocalTestData();
+          const programId = getRecommendedProgram(local.score);
+          setTestResult({
+            score: local.score,
+            correct_count: null,
+            total_count: null,
+            weak_themes: local.weakThemes.length ? local.weakThemes : ["variables", "conditions"],
+            recommended_program: programId
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingData(false);
+        }
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, navigate]);
+
+  const assignedProgram = useMemo(() => {
+    const programId = testResult?.recommended_program || getRecommendedProgram(testResult?.score || 0);
+    return PROGRAMS.find((item) => item.id === programId) || PROGRAMS[1];
+  }, [testResult]);
+
+  async function continueToAgenda() {
     if (!user?.id) {
       setError("Session expirée. Reconnectez-vous.");
       return;
     }
+
+    const weakThemes =
+      testResult?.weak_themes?.length > 0
+        ? testResult.weak_themes
+        : readLocalTestData().weakThemes;
 
     setLoading(true);
     setError("");
@@ -55,77 +98,107 @@ export default function StudyPlan() {
 
     try {
       if (user.has_chosen_program && user.program_id) {
-        try {
-          const existing = await api.getCurrentProgram();
-          await persistProgram(existing, programId);
-          return;
-        } catch {
-          // pas encore en base, on tente la création
-        }
+        const existing = await api.getCurrentProgram();
+        await persistProgram(existing, assignedProgram.id);
+        return;
       }
 
-      const data = await api.createStudyProgram({ weakThemes, program: programId });
-      await persistProgram(data, programId);
+      const data = await api.createStudyProgram({
+        weakThemes,
+        program: assignedProgram.id
+      });
+      await persistProgram(data, assignedProgram.id);
     } catch (err) {
       try {
         const existing = await api.getCurrentProgram();
-        await persistProgram(existing, programId);
+        await persistProgram(existing, assignedProgram.id);
       } catch {
-        setError(err.message || "Impossible de créer le programme.");
+        setError(err.message || "Impossible de générer votre programme.");
       }
     } finally {
       setLoading(false);
     }
   }
 
+  if (loadingData) {
+    return (
+      <div className="page-container flex min-h-[40vh] items-center justify-center">
+        <p className="text-udbl-muted">Préparation de votre programme...</p>
+      </div>
+    );
+  }
+
+  const score = testResult?.score ?? 0;
+  const weakThemes = testResult?.weak_themes || [];
+
   return (
-    <div className="page-container">
+    <div className="page-container max-w-3xl">
       <PageHeader
         badge={user?.preferred_language ? `Parcours ${user.preferred_language}` : "Étape 2"}
-        title="Programme personnalisé"
-        subtitle={`Score au test : ${score}% — cours en ${user?.preferred_language || "votre langage"} (une seule fois)`}
+        title="Votre programme sur mesure"
+        subtitle="Résultats du test et parcours généré automatiquement pour vous"
       />
 
-      <div className="mb-6 max-w-3xl rounded-xl border border-udbl-blue/20 bg-udbl-blue/5 px-4 py-3 text-sm text-udbl-dark">
-        Chaque programme génère un nombre de leçons adapté à vos lacunes. À la fin de
-        chaque leçon, un quiz valide vos acquis avant de passer à la suivante.
-      </div>
+      <div className="space-y-6">
+        <div className="card card-body text-center">
+          <span className="badge-green">Test d&apos;entrée terminé</span>
+          <div className="my-6 inline-flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-udbl-blue to-udbl-green text-3xl font-bold text-white shadow-lg">
+            {score}%
+          </div>
+          {testResult?.correct_count != null && testResult?.total_count != null && (
+            <p className="text-udbl-muted">
+              {testResult.correct_count} / {testResult.total_count} bonnes réponses
+            </p>
+          )}
 
-      {error && (
-        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {PROGRAMS.map((p) => {
-          const isRec = p.id === recommended;
-          return (
-            <div
-              key={p.id}
-              className={`card card-body relative transition hover:shadow-xl ${
-                isRec ? "ring-2 ring-udbl-green shadow-udbl-green/20" : ""
-              }`}
-            >
-              {isRec && (
-                <span className="absolute -top-2 right-3 badge-green shadow-sm">
-                  Recommandé
-                </span>
-              )}
-              <span className="text-2xl">{p.icon}</span>
-              <h3 className="mt-2 font-bold text-udbl-blue">{p.title}</h3>
-              <p className="mt-1 text-sm text-udbl-muted">{p.desc}</p>
-              <p className="mt-2 text-xs font-medium text-udbl-blue">
-                {p.sessions} leçon(s) sur vos lacunes
-              </p>
-              <button
-                disabled={loading}
-                onClick={() => chooseProgram(p.id)}
-                className={`mt-4 w-full ${isRec ? "btn-success" : "btn-primary"}`}
-              >
-                {loading ? "Génération..." : "Choisir"}
-              </button>
+          {weakThemes.length > 0 && (
+            <div className="mt-6 text-left">
+              <p className="mb-2 text-sm font-semibold text-udbl-blue">Lacunes identifiées</p>
+              <div className="flex flex-wrap gap-2">
+                {weakThemes.map((theme) => (
+                  <span key={theme} className="badge-blue">
+                    {theme}
+                  </span>
+                ))}
+              </div>
             </div>
-          );
-        })}
+          )}
+        </div>
+
+        <div className="card card-body">
+          <p className="text-xs font-semibold uppercase tracking-wide text-udbl-muted">
+            Programme assigné
+          </p>
+          <div className="mt-4 flex items-start gap-4">
+            <span className="text-3xl">{assignedProgram.icon}</span>
+            <div>
+              <h2 className="text-xl font-bold text-udbl-blue">{assignedProgram.title}</h2>
+              <p className="mt-1 text-sm text-udbl-muted">{assignedProgram.desc}</p>
+              <p className="mt-3 text-sm text-udbl-dark">
+                {assignedProgram.sessions} leçon(s) générées sur vos lacunes en{" "}
+                {user?.preferred_language || "votre langage"}.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-udbl-blue/20 bg-udbl-blue/5 px-4 py-3 text-sm text-udbl-dark">
+          Votre programme est choisi automatiquement selon votre score. Cliquez sur Suivant pour
+          planifier vos séances.
+        </div>
+
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        )}
+
+        <button
+          type="button"
+          onClick={continueToAgenda}
+          disabled={loading}
+          className="btn-primary w-full"
+        >
+          {loading ? "Génération du programme..." : "Suivant → Planifier mon agenda"}
+        </button>
       </div>
     </div>
   );
