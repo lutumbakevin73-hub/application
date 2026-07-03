@@ -21,9 +21,9 @@ function buildPoints(scores, width, height, padding) {
 }
 
 export default function LessonTrendChart({ labels = [], scores = [] }) {
-  const width = 640;
-  const height = 220;
-  const padding = 28;
+  const width = 720;
+  const height = 260;
+  const padding = 32;
   const hasData = scores.some((score) => score != null);
   const points = buildPoints(scores, width, height, padding);
 
@@ -50,7 +50,7 @@ export default function LessonTrendChart({ labels = [], scores = [] }) {
                 stroke="#e2e8f0"
                 strokeWidth="1"
               />
-              <text x="4" y={y + 4} fill="#64748b" fontSize="10">
+              <text x="4" y={y + 4} fill="#64748b" fontSize="12">
                 {tick}%
               </text>
             </g>
@@ -76,8 +76,8 @@ export default function LessonTrendChart({ labels = [], scores = [] }) {
 
           return (
             <g key={labels[index] || index}>
-              <circle cx={x} cy={y} r="5" fill="#2e8b57" stroke="#fff" strokeWidth="2" />
-              <text x={x} y={height - 8} textAnchor="middle" fill="#64748b" fontSize="10">
+              <circle cx={x} cy={y} r="6" fill="#2e8b57" stroke="#fff" strokeWidth="2" />
+              <text x={x} y={height - 8} textAnchor="middle" fill="#64748b" fontSize="12">
                 L{index + 1}
               </text>
             </g>

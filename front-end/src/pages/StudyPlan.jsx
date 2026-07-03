@@ -4,6 +4,8 @@ import { api } from "../api/client";
 import { PROGRAMS, getRecommendedProgram } from "../config/programs";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
+import { WeakThemesDetail } from "../components/ThemeProgress";
+import { getWeakThemeDetails } from "../utils/themeAnalytics";
 
 function readLocalTestData() {
   const score = Number(localStorage.getItem("userScore") || 0);
@@ -129,7 +131,7 @@ export default function StudyPlan() {
   }
 
   const score = testResult?.score ?? 0;
-  const weakThemes = testResult?.weak_themes || [];
+  const weakThemeDetails = getWeakThemeDetails(testResult);
 
   return (
     <div className="page-container max-w-3xl">
@@ -151,16 +153,9 @@ export default function StudyPlan() {
             </p>
           )}
 
-          {weakThemes.length > 0 && (
-            <div className="mt-6 text-left">
-              <p className="mb-2 text-sm font-semibold text-udbl-blue">Lacunes identifiées</p>
-              <div className="flex flex-wrap gap-2">
-                {weakThemes.map((theme) => (
-                  <span key={theme} className="badge-blue">
-                    {theme}
-                  </span>
-                ))}
-              </div>
+          {weakThemeDetails.length > 0 && (
+            <div className="mt-6">
+              <WeakThemesDetail items={weakThemeDetails} />
             </div>
           )}
         </div>

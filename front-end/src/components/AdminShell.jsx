@@ -72,7 +72,7 @@ export default function AdminShell() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <header className="sticky top-0 z-40 border-b border-slate-800 bg-udbl-dark text-white">
-        <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-10">
           <div className="flex items-center gap-3">
             <Logo size="sm" />
             <div>
@@ -92,32 +92,32 @@ export default function AdminShell() {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white lg:block">
-          <p className="px-4 pt-5 pb-2 text-xs font-semibold uppercase tracking-wide text-udbl-muted">
+        <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white xl:w-72 lg:block">
+          <p className="px-5 pt-6 pb-3 text-xs font-semibold uppercase tracking-wide text-udbl-muted">
             Administration
           </p>
-          <nav className="flex flex-col gap-1 px-3 pb-6">
+          <nav className="flex flex-col gap-1.5 px-4 pb-8">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium ${
+                  `flex items-center gap-3 rounded-xl px-4 py-3.5 text-[15px] font-medium ${
                     isActive
-                      ? "bg-udbl-blue text-white"
+                      ? "bg-udbl-blue text-white shadow-sm"
                       : "text-udbl-muted hover:bg-slate-100 hover:text-udbl-blue"
                   }`
                 }
               >
-                <span className="shrink-0 opacity-90">{item.icon}</span>
+                <span className="shrink-0 opacity-90 [&_svg]:h-5 [&_svg]:w-5">{item.icon}</span>
                 <span>{item.label}</span>
               </NavLink>
             ))}
           </nav>
         </aside>
 
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-slate-50/80">
           <div className="border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
             <nav className="flex flex-wrap gap-2">
               {NAV.map((item) => (
@@ -126,19 +126,19 @@ export default function AdminShell() {
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${
+                    `inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium ${
                       isActive ? "bg-udbl-blue text-white" : "bg-slate-100 text-udbl-muted"
                     }`
                   }
                 >
-                  <span className="shrink-0 [&_svg]:h-3.5 [&_svg]:w-3.5">{item.icon}</span>
+                  <span className="shrink-0 [&_svg]:h-4 [&_svg]:w-4">{item.icon}</span>
                   <span>{item.label}</span>
                 </NavLink>
               ))}
             </nav>
           </div>
 
-          <div className="page-container max-w-6xl py-8">
+          <div className="admin-main">
             <Outlet />
           </div>
         </main>

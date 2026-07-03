@@ -1,33 +1,15 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { getJourneyPath, useAuth } from "../context/AuthContext";
 import AuthCard from "../components/AuthCard";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
   const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const oauthToken = params.get("token");
-    if (!oauthToken) return;
-
-    async function handleOAuth() {
-      login(oauthToken);
-      try {
-        const profile = await api.me();
-        navigate(getJourneyPath(profile) || "/language", { replace: true });
-      } catch {
-        navigate("/language", { replace: true });
-      }
-    }
-
-    handleOAuth();
-  }, [params, login, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -79,19 +61,6 @@ export default function Login() {
 
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? "Connexion..." : "Se connecter"}
-        </button>
-
-        <div className="relative py-2 text-center text-sm text-udbl-muted">
-          <span className="bg-white px-2 relative z-10">ou</span>
-          <div className="absolute inset-x-0 top-1/2 border-t border-slate-200" />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => (window.location.href = api.googleAuthUrl)}
-          className="btn-outline w-full"
-        >
-          Continuer avec Google
         </button>
 
         <p className="text-center text-sm">

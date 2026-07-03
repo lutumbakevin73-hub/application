@@ -3,8 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import CodeEditor from "../components/CodeEditor";
 import ModalOverlay from "../components/ui/ModalOverlay";
+import { WeakThemesDetail } from "../components/ThemeProgress";
 import { useAuth } from "../context/AuthContext";
 import { useDialog } from "../context/DialogContext";
+import { getWeakThemesFromEvaluation } from "../utils/themeAnalytics";
 
 function analyzeResults(results) {
   const summary = {
@@ -54,6 +56,7 @@ export default function Quiz() {
   const [loading, setLoading] = useState(false);
   const [programError, setProgramError] = useState("");
   const finishingRef = useRef(false);
+  const latestAnswersRef = useRef([]);
 
   if (!questions.length) {
     return (
@@ -119,6 +122,7 @@ export default function Quiz() {
       };
 
       const nextAnswers = [...answers, entry];
+      latestAnswersRef.current = nextAnswers;
       setAnswers(nextAnswers);
       setModal({ isCorrect, count: nextAnswers.filter((a) => a.correct).length });
     } catch (err) {
@@ -189,11 +193,13 @@ export default function Quiz() {
     if (next < questions.length) {
       setCurrent(next);
     } else {
-      finishTest(answers);
+      finishTest(latestAnswersRef.current);
     }
   }
 
   if (finished) {
+    const weakDetails = getWeakThemesFromEvaluation(finished.byTheme);
+
     return (
       <div className="page-container max-w-3xl">
         <div className="card card-body text-center">
@@ -205,6 +211,11 @@ export default function Quiz() {
           <p className="text-udbl-muted">
             {finished.correct} / {finished.total} bonnes réponses
           </p>
+          {weakDetails.length > 0 && (
+            <div className="mt-8 text-left">
+              <WeakThemesDetail items={weakDetails} />
+            </div>
+          )}
           {programError && (
             <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{programError}</p>
           )}

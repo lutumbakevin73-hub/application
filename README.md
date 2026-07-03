@@ -8,7 +8,7 @@ Plateforme d'apprentissage personnalisé en programmation (C & Python) avec IA.
 application/
 ├── back-end/          # API Express (Node.js)
 │   ├── src/
-│   │   ├── config/    # env, database, passport
+│   │   ├── config/    # env, database
 │   │   ├── controllers/
 │   │   ├── routes/
 │   │   ├── services/
@@ -29,7 +29,7 @@ application/
 ```bash
 cd back-end
 cp .env.example .env   # Windows : copy .env.example .env
-npm run setup-env      # crée .env avec toutes les clés de test (Groq, Google…)
+npm run setup-env      # crée .env avec les clés de test (Groq…)
 npm install
 npm start
 ```
@@ -82,8 +82,7 @@ npm run migrate
 | `DB_CLIENT` | `sqlite3` (défaut) ou `mysql2` |
 | `GROQ_API_KEY` | Génération IA (test, cours, correction) |
 | `JWT_SECRET` | Secret pour les tokens |
-| `FRONTEND_URL` | URL React (CORS + OAuth) |
-| `GOOGLE_CLIENT_*` | Connexion Google (optionnel) |
+| `FRONTEND_URL` | URL React (CORS) |
 | `TWILIO_*` | Rappels SMS (optionnel) |
 
 ## Parcours utilisateur

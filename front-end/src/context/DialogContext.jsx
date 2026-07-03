@@ -58,7 +58,9 @@ export function DialogProvider({ children }) {
   const confirmButtonClass =
     dialog?.variant === "danger"
       ? "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
-      : "btn-primary w-full sm:w-auto";
+      : dialog?.variant === "success"
+        ? "btn-success w-full sm:w-auto"
+        : "btn-primary w-full sm:w-auto";
 
   return (
     <DialogContext.Provider value={value}>
@@ -70,6 +72,11 @@ export function DialogProvider({ children }) {
           onClose={() => closeDialog(dialog.type === "confirm" ? false : undefined)}
         >
           <div className="text-center sm:text-left">
+            {dialog.variant === "success" && (
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-udbl-green/15 text-3xl sm:mx-0">
+                🎉
+              </div>
+            )}
             <h2 id={dialog.id} className="text-lg font-bold text-udbl-dark">
               {dialog.title}
             </h2>

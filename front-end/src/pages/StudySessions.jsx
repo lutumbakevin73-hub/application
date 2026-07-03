@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { PhaseIcon } from "../components/PhaseIcon";
 import PageHeader from "../components/PageHeader";
+import { useDialog } from "../context/DialogContext";
 import {
   getQuizData,
   normalizeStudySession,
@@ -238,6 +239,7 @@ function SessionStatusBadge({ session, progress }) {
 }
 
 export default function StudySessions() {
+  const { alert } = useDialog();
   const [sessions, setSessions] = useState([]);
   const [programId, setProgramId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -344,6 +346,21 @@ export default function StudySessions() {
     return sessions.find((session) => !isSessionCompleted(session.session_order, progress));
   }, [sessions, progress]);
 
+  async function showLessonSuccessDialog(session, score, correct, total) {
+    const isLastLesson =
+      !sessions.find((item) => item.session_order === session.session_order + 1);
+    const scoreLine = total > 0 ? `${correct}/${total} bonnes réponses` : "Leçon complétée avec succès";
+
+    await alert({
+      title: isLastLesson ? "Félicitations ! Parcours terminé 🎉" : "Félicitations ! 🎉",
+      message: isLastLesson
+        ? `Bravo ! Vous avez validé la dernière leçon « ${session.theme} » avec ${score}%.\n\n${scoreLine}. Vous avez terminé tout votre parcours !`
+        : `Bravo ! Vous avez validé la leçon « ${session.theme} » avec ${score}%.\n\n${scoreLine}. Continuez sur cette lancée !`,
+      confirmLabel: "Continuer",
+      variant: "success"
+    });
+  }
+
   function openSession(session) {
     if (!isSessionUnlocked(session.session_order, progress)) return;
     setActiveSession(session);
@@ -359,12 +376,23 @@ export default function StudySessions() {
     setQuizFeedback(null);
   }
 
-  function submitQuiz() {
+  async function submitQuiz() {
     const quizData = getQuizData(activeSession?.mini_quiz, activeSession?.theme);
     const { questions, passing_score: passingScore } = quizData;
 
     if (questions.length === 0) {
+      let nextProgress = markSessionCompleted(
+        programId,
+        progress,
+        activeSession.session_order
+      );
+      setProgress(nextProgress);
+      void api.saveLessonProgress({
+        completed: nextProgress.completed,
+        quizAttempts: nextProgress.quizAttempts
+      });
       setQuizFeedback({ passed: true, score: 100, message: "Leçon validée." });
+      await showLessonSuccessDialog(activeSession, 100, 0, 0);
       setPhase(PHASES.review);
       return;
     }
@@ -427,6 +455,16 @@ export default function StudySessions() {
       completed: nextProgress.completed,
       quizAttempts: nextProgress.quizAttempts
     });
+
+    if (passed) {
+      await showLessonSuccessDialog(
+        activeSession,
+        score,
+        correct,
+        questions.length
+      );
+    }
+
     setPhase(PHASES.review);
   }
 
@@ -711,12 +749,12 @@ export default function StudySessions() {
       <div className="card card-body mb-6">
         <div className="mb-2 flex justify-between text-sm text-udbl-muted">
           <span>Progression du parcours</span>
-          <span>{Math.round((completedCount / totalCount) * 100)}%</span>
+          <span>{totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%</span>
         </div>
         <div className="progress-track">
           <div
             className="progress-fill"
-            style={{ width: `${(completedCount / totalCount) * 100}%` }}
+            style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
           />
         </div>
       </div>

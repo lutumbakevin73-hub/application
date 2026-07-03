@@ -7,9 +7,9 @@ import StudentProgressBar from "../../components/admin/StudentProgressBar";
 function StatCard({ label, value, hint }) {
   return (
     <div className="card card-body">
-      <p className="text-sm text-udbl-muted">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-udbl-blue">{value}</p>
-      {hint && <p className="mt-1 text-xs text-udbl-muted">{hint}</p>}
+      <p className="text-base text-udbl-muted">{label}</p>
+      <p className="mt-2 text-4xl font-bold text-udbl-blue">{value}</p>
+      {hint && <p className="mt-2 text-sm text-udbl-muted">{hint}</p>}
     </div>
   );
 }

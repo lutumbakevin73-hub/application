@@ -113,8 +113,6 @@ export const api = {
       body: JSON.stringify(body)
     }),
 
-  googleAuthUrl: `${API_BASE}/auth/google`,
-
   adminDashboard: () => request("/api/admin/dashboard"),
 
   adminUsers: () => request("/api/admin/users"),

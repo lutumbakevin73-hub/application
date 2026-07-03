@@ -41,6 +41,49 @@ body {
   @apply max-w-5xl mx-auto px-4 py-8 sm:px-6;
 }
 
+/* Espace admin : pleine largeur, éléments plus grands */
+.admin-main {
+  @apply w-full px-5 py-8 sm:px-8 lg:px-10 xl:px-12;
+}
+
+.admin-main .card-body {
+  @apply p-6 sm:p-8 lg:p-9;
+}
+
+.admin-main h1 {
+  @apply text-3xl sm:text-4xl;
+}
+
+.admin-main h1 + p.text-udbl-muted {
+  @apply text-base leading-relaxed;
+}
+
+.admin-main .text-2xl {
+  @apply text-3xl;
+}
+
+.admin-main table {
+  @apply text-[15px];
+}
+
+.admin-main table th {
+  @apply px-5 py-3.5 sm:px-6;
+}
+
+.admin-main table td {
+  @apply px-5 py-4 sm:px-6;
+}
+
+.admin-main .input-field {
+  @apply py-3.5 text-[15px];
+}
+
+.admin-main .badge,
+.admin-main .badge-blue,
+.admin-main .badge-green {
+  @apply px-3 py-1 text-sm;
+}
+
 .card {
   @apply bg-white rounded-2xl border border-slate-200/80 shadow-lg shadow-slate-200/50;
 }

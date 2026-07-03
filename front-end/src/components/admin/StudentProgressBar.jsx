@@ -22,15 +22,15 @@ export default function StudentProgressBar({
   const safePercent = percent ?? Math.round((completed / total) * 100);
 
   return (
-    <div className={compact ? "min-w-[140px]" : "min-w-[220px]"}>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-udbl-blue">{safePercent} %</span>
-        <span className="text-xs text-udbl-muted">
+    <div className={compact ? "min-w-[180px]" : "min-w-[260px]"}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-udbl-blue">{safePercent} %</span>
+        <span className="text-sm text-udbl-muted">
           {label || `${completed}/${total} leçon${total > 1 ? "s" : ""}`}
         </span>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
         <div
           className="h-full rounded-full bg-udbl-green transition-all"
           style={{ width: `${safePercent}%` }}

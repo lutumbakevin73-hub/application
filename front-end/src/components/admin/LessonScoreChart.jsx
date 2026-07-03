@@ -17,20 +17,20 @@ export default function LessonScoreChart({ labels = [], scores = [], completed =
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {labels.map((label, index) => {
         const score = scores[index];
         const width = score != null ? Math.max(score, 4) : completed[index] ? 100 : 0;
 
         return (
           <div key={label}>
-            <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-              <span className="font-medium text-udbl-dark">{label}</span>
+            <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
+              <span className="font-semibold text-udbl-dark">{label}</span>
               <span className="text-udbl-muted">
                 {score != null ? `${score} %` : completed[index] ? "Validée" : "—"}
               </span>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-4 overflow-hidden rounded-full bg-slate-100">
               <div
                 className={`h-full rounded-full transition-all ${getBarColor(score, completed[index])}`}
                 style={{ width: `${width}%` }}
