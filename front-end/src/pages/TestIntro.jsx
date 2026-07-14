@@ -10,6 +10,7 @@ export default function TestIntro() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const language = user?.preferred_language || "C";
+  const arrayLabel = language === "Python" ? "listes" : "tableaux";
 
   async function startTest() {
     setLoading(true);
@@ -31,7 +32,7 @@ export default function TestIntro() {
       <PageHeader
         badge={`Parcours ${language}`}
         title="Évaluation de vos connaissances"
-        subtitle={`Test de niveau en ${language} — 10 questions pour identifier vos lacunes`}
+        subtitle={`Test de niveau en ${language} — 20 questions sur les notions de base`}
       />
 
       <div className="mb-6 max-w-2xl mx-auto rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -45,18 +46,22 @@ export default function TestIntro() {
             📝
           </div>
           <p className="text-udbl-muted leading-relaxed">
-            Ce test comprend des QCM et des exercices pratiques en {language}. Vos résultats
-            serviront à générer un programme de renforcement personnalisé dans le même langage.
+            Ce test comprend des QCM et des exercices pratiques en {language}, limités aux
+            notions fondamentales. Vos résultats serviront à générer un programme personnalisé.
           </p>
 
           <ul className="mt-6 space-y-2 text-left text-sm text-udbl-muted">
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-udbl-blue" />
-              5 questions QCM ({language})
+              20 questions — 5 par notion (variables, conditions, fonctions, {arrayLabel})
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-udbl-blue" />
+              10 QCM + 10 exercices de code ({language})
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-udbl-green" />
-              5 exercices de code ({language})
+              Niveau débutant — pas de notions avancées
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-udbl-blue" />

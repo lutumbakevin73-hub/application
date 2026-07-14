@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { env } from "../config/env.js";
 import { getAllAgendas, updateAgendaSessions } from "./agenda.service.js";
-import { isTwilioConfigured, sendSMS } from "./sms.service.js";
+import { isTwilioConfigured, normalizePhoneNumber, sendSMS } from "./sms.service.js";
 import {
   formatSessionDateTimeLocal,
   getMinutesUntilSession
@@ -45,7 +45,7 @@ export function startReminderService() {
             try {
               const when = formatSessionDateTimeLocal(session.date, session.time);
               await sendSMS(
-                agenda.phone,
+                normalizePhoneNumber(agenda.phone),
                 `UDBL Learning — Rappel : votre seance commence dans ${Math.max(1, Math.round(diffMinutes))} min (${when}). Bon courage !`
               );
               session.reminded = true;

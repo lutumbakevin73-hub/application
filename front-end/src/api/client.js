@@ -87,6 +87,60 @@ export const api = {
       body: JSON.stringify(body)
     }),
 
+  async *createStudyProgramStream(body) {
+    const headers = { "Content-Type": "application/json" };
+    const token = getToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/api/study/register/stream`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      let message = text;
+      try {
+        message = JSON.parse(text).message || JSON.parse(text).error || text;
+      } catch {
+        // keep raw text
+      }
+      throw new Error(message || `Erreur HTTP ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error("Flux de génération indisponible");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() || "";
+
+      for (const chunk of chunks) {
+        const line = chunk
+          .split("\n")
+          .find((entry) => entry.startsWith("data: "));
+        if (!line) {
+          continue;
+        }
+        yield JSON.parse(line.slice(6));
+      }
+    }
+  },
+
   completeTest: (payload) =>
     request("/api/user/complete-test", {
       method: "POST",

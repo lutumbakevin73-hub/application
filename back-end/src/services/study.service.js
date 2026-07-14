@@ -2,43 +2,81 @@ import { getDb, insertAndGetId } from "../config/database.js";
 import { getSessionCount, normalizeProgramId } from "../config/programs.js";
 import { generateStudyProgram } from "./llm.service.js";
 
-function normalizeQuestion(value) {
+function normalizeQuestionType(value) {
+  const type = String(value?.type || value?.question_type || "").toLowerCase();
+  if (type === "pratique" || type === "code" || type === "practical") {
+    return "pratique";
+  }
+
+  const answer =
+    value?.answer ||
+    value?.correct_answer ||
+    value?.correctAnswer ||
+    value?.expected_answer;
+
+  if (answer && (!Array.isArray(value?.options) || value.options.length === 0)) {
+    return "pratique";
+  }
+
+  return "qcm";
+}
+
+function normalizeQuestion(value, language = "C") {
   if (!value || typeof value !== "object") {
     return {
+      type: "qcm",
       question: "Question de révision",
       options: ["A", "B", "C", "D"],
       answer: "A",
+      correctAnswer: "A",
+      language,
       explanation: ""
     };
   }
 
+  const type = normalizeQuestionType(value);
+  const options =
+    type === "qcm" && Array.isArray(value.options) && value.options.length > 0
+      ? value.options
+      : type === "qcm"
+        ? ["A", "B", "C", "D"]
+        : [];
+
+  const answer =
+    value.answer ||
+    value.correct_answer ||
+    value.correctAnswer ||
+    value.expected_answer ||
+    options[0] ||
+    "A";
+
   return {
+    type,
     question: value.question || "Question de révision",
-    options: Array.isArray(value.options) ? value.options : ["A", "B", "C", "D"],
-    answer:
-      value.answer ||
-      value.correct_answer ||
-      value.correctAnswer ||
-      value.options?.[0] ||
-      "A",
+    options,
+    answer: String(answer),
+    correctAnswer: String(answer),
+    language: value.language || language,
     explanation: value.explanation || value.feedback || ""
   };
 }
 
-function normalizeMiniQuiz(value) {
+function normalizeMiniQuiz(value, language = "C") {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     if (Array.isArray(value.questions) && value.questions.length > 0) {
       return {
         title: value.title || "Quiz de fin de leçon",
         passing_score: Number(value.passing_score) || 70,
-        questions: value.questions.map(normalizeQuestion).slice(0, 5)
+        questions: value.questions
+          .map((q) => normalizeQuestion(q, value.language || language))
+          .slice(0, 10)
       };
     }
 
     return {
       title: value.title || "Quiz de fin de leçon",
       passing_score: Number(value.passing_score) || 70,
-      questions: [normalizeQuestion(value)]
+      questions: [normalizeQuestion(value, language)]
     };
   }
 
@@ -119,6 +157,39 @@ function normalizeExerciseObject(value) {
   };
 }
 
+const EXERCISES_PER_LESSON = 3;
+
+function normalizeExercises(value) {
+  let items = [];
+
+  if (Array.isArray(value)) {
+    items = value;
+  } else if (value && typeof value === "object") {
+    items = [value];
+  } else if (typeof value === "string" && value.trim()) {
+    items = [{ instructions: value.trim() }];
+  }
+
+  const normalized = items.map((item) =>
+    typeof item === "string" ? normalizeExercise({ instructions: item }) : normalizeExerciseObject(item)
+  );
+
+  if (normalized.length === 0) {
+    normalized.push(normalizeExercise(null));
+  }
+
+  while (normalized.length < EXERCISES_PER_LESSON) {
+    const base = normalized[normalized.length - 1];
+    normalized.push({
+      ...base,
+      title: `${base.title || "Exercice pratique"} — variante ${normalized.length + 1}`,
+      instructions: `${base.instructions}\n\nVariante : adaptez le programme avec de nouvelles valeurs ou contraintes.`
+    });
+  }
+
+  return normalized.slice(0, EXERCISES_PER_LESSON);
+}
+
 function normalizeLesson(value) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value;
@@ -140,8 +211,8 @@ function normalizeSession(session, index, language = "C") {
     theme: String(session.theme || `Séance ${index + 1}`),
     language: session.language === "Python" || session.language === "C" ? session.language : lang,
     lesson: normalizeLesson(session.lesson),
-    exercise: normalizeExercise(session.exercise),
-    mini_quiz: normalizeMiniQuiz(session.mini_quiz)
+    exercise: normalizeExercises(session.exercises ?? session.exercise),
+    mini_quiz: normalizeMiniQuiz(session.mini_quiz, lang)
   };
 }
 
@@ -155,13 +226,13 @@ function toJsonColumn(value) {
   return value;
 }
 
-async function buildSessions(themes, program, language = "C") {
+async function buildSessions(themes, program, language = "C", onProgress) {
   const sessionCount = getSessionCount(program);
   const lang = language === "Python" ? "Python" : "C";
-  let rawSessions;
 
+  let rawSessions;
   try {
-    rawSessions = await generateStudyProgram(themes, sessionCount, lang);
+    rawSessions = await generateStudyProgram(themes, sessionCount, lang, onProgress);
   } catch (err) {
     console.error("Génération IA impossible :", err.message);
     rawSessions = [];
@@ -219,7 +290,7 @@ export async function getUserProgram(userId) {
   };
 }
 
-export async function createStudyProgram(userId, weakThemes, programCode) {
+export async function createStudyProgram(userId, weakThemes, programCode, onProgress) {
   const program = normalizeProgramId(programCode);
   const db = getDb();
   const numericUserId = Number(userId);
@@ -244,6 +315,15 @@ export async function createStudyProgram(userId, weakThemes, programCode) {
     await findProgramWithSessions(db, numericUserId);
 
   if (existingSessions.length > 0 && existingProgram) {
+    if (typeof onProgress === "function") {
+      onProgress({
+        phase: "done",
+        message: "Programme déjà disponible.",
+        percent: 100,
+        current: existingSessions.length,
+        total: existingSessions.length
+      });
+    }
     return {
       programId: existingProgram.id,
       program: existingProgram.program || program,
@@ -253,7 +333,10 @@ export async function createStudyProgram(userId, weakThemes, programCode) {
   }
 
   if (existingProgram) {
-    const sessions = await buildSessions(themes, program, learningLanguage);
+    const sessions = await buildSessions(themes, program, learningLanguage, onProgress);
+    if (typeof onProgress === "function") {
+      onProgress({ phase: "saving", message: "Enregistrement en base de données...", percent: 95 });
+    }
     await db.transaction(async (trx) => {
       await trx("study_programs")
         .where({ id: existingProgram.id })
@@ -268,7 +351,11 @@ export async function createStudyProgram(userId, weakThemes, programCode) {
     };
   }
 
-  const sessions = await buildSessions(themes, program, learningLanguage);
+  const sessions = await buildSessions(themes, program, learningLanguage, onProgress);
+
+  if (typeof onProgress === "function") {
+    onProgress({ phase: "saving", message: "Enregistrement de votre programme...", percent: 95 });
+  }
 
   return db.transaction(async (trx) => {
     const programId = await insertAndGetId(

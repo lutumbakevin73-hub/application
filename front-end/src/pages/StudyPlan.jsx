@@ -86,40 +86,31 @@ export default function StudyPlan() {
         ? testResult.weak_themes
         : readLocalTestData().weakThemes;
 
-    setLoading(true);
-    setError("");
-
-    async function persistProgram(data, chosenProgram) {
-      localStorage.setItem("studySessions", JSON.stringify(data.sessions));
-      localStorage.setItem("programId", String(data.programId));
-      localStorage.setItem("selectedProgram", chosenProgram);
-      markProgramChosen(data.programId);
-      await refreshProfile();
-      navigate("/agenda");
-    }
-
-    try {
-      if (user.has_chosen_program && user.program_id) {
-        const existing = await api.getCurrentProgram();
-        await persistProgram(existing, assignedProgram.id);
-        return;
-      }
-
-      const data = await api.createStudyProgram({
-        weakThemes,
-        program: assignedProgram.id
-      });
-      await persistProgram(data, assignedProgram.id);
-    } catch (err) {
+    if (user.has_chosen_program && user.program_id) {
+      setLoading(true);
+      setError("");
       try {
         const existing = await api.getCurrentProgram();
-        await persistProgram(existing, assignedProgram.id);
-      } catch {
-        setError(err.message || "Impossible de générer votre programme.");
+        localStorage.setItem("studySessions", JSON.stringify(existing.sessions));
+        localStorage.setItem("programId", String(existing.programId));
+        localStorage.setItem("selectedProgram", assignedProgram.id);
+        markProgramChosen(existing.programId);
+        await refreshProfile();
+        navigate("/agenda");
+      } catch (err) {
+        setError(err.message || "Impossible de charger votre programme.");
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+      return;
     }
+
+    navigate("/plan/generating", {
+      state: {
+        weakThemes,
+        program: assignedProgram.id
+      }
+    });
   }
 
   if (loadingData) {
@@ -178,8 +169,8 @@ export default function StudyPlan() {
         </div>
 
         <div className="rounded-xl border border-udbl-blue/20 bg-udbl-blue/5 px-4 py-3 text-sm text-udbl-dark">
-          Votre programme est choisi automatiquement selon votre score. Cliquez sur Suivant pour
-          planifier vos séances.
+          Votre programme est choisi automatiquement selon votre score. La génération des leçons
+          détaillées peut prendre quelques minutes — un écran de progression vous guidera.
         </div>
 
         {error && (

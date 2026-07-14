@@ -26,6 +26,7 @@ import ResetPassword from "./pages/ResetPassword";
 import TestIntro from "./pages/TestIntro";
 import Quiz from "./pages/Quiz";
 import StudyPlan from "./pages/StudyPlan";
+import GeneratingProgram from "./pages/GeneratingProgram";
 import StudySessions from "./pages/StudySessions";
 import Agenda from "./pages/Agenda";
 
@@ -100,6 +101,16 @@ export default function App() {
                 <AdminRedirect>
                   <RequireProgramPending>
                     <StudyPlan />
+                  </RequireProgramPending>
+                </AdminRedirect>
+              }
+            />
+            <Route
+              path="plan/generating"
+              element={
+                <AdminRedirect>
+                  <RequireProgramPending>
+                    <GeneratingProgram />
                   </RequireProgramPending>
                 </AdminRedirect>
               }

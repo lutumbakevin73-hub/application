@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import CodeEditor from "../components/CodeEditor";
+import QuestionContent from "../components/QuestionContent";
 import { PhaseIcon } from "../components/PhaseIcon";
 import PageHeader from "../components/PageHeader";
 import { useDialog } from "../context/DialogContext";
 import {
   getQuizData,
+  getExercises,
   normalizeStudySession,
   parseExercise
 } from "../utils/courseContent";
@@ -18,6 +21,7 @@ import {
   recordQuizAttempt,
   saveProgress
 } from "../utils/lessonProgress";
+import { isPracticalQuestion } from "../utils/questionContent";
 
 const PHASES = {
   overview: "overview",
@@ -29,7 +33,7 @@ const PHASES = {
 
 const PHASE_STEPS = [
   { id: PHASES.lesson, label: "Cours", icon: "lesson" },
-  { id: PHASES.exercise, label: "Exercice", icon: "exercise" },
+  { id: PHASES.exercise, label: "Exercices", icon: "exercise" },
   { id: PHASES.quiz, label: "Quiz", icon: "quiz" },
   { id: PHASES.review, label: "Bilan", icon: "review" }
 ];
@@ -123,7 +127,7 @@ function LessonContent({ session }) {
 
       {lesson.example_code && (
         <section>
-          <h3 className="mb-2 font-semibold text-udbl-blue">Exemple de code</h3>
+          <h3 className="mb-2 font-semibold text-udbl-blue">Exemple principal</h3>
           <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm text-green-300">
             {lesson.example_code}
           </pre>
@@ -135,6 +139,35 @@ function LessonContent({ session }) {
           {lesson.example_explanation && (
             <p className="mt-2 text-sm leading-relaxed">{lesson.example_explanation}</p>
           )}
+        </section>
+      )}
+
+      {Array.isArray(lesson.additional_examples) && lesson.additional_examples.length > 0 && (
+        <section className="space-y-4">
+          <h3 className="font-semibold text-udbl-blue">Exemples supplémentaires</h3>
+          {lesson.additional_examples.map((example, index) => (
+            <div
+              key={example.title || index}
+              className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+            >
+              <h4 className="mb-2 font-medium text-udbl-dark">
+                {example.title || `Exemple ${index + 1}`}
+              </h4>
+              {example.code && (
+                <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-sm text-green-300">
+                  {example.code}
+                </pre>
+              )}
+              {example.output && (
+                <p className="mt-2 rounded-lg bg-white px-3 py-2 text-sm font-mono text-udbl-muted">
+                  Sortie : {example.output}
+                </p>
+              )}
+              {example.explanation && (
+                <p className="mt-2 text-sm leading-relaxed">{example.explanation}</p>
+              )}
+            </div>
+          ))}
         </section>
       )}
 
@@ -174,12 +207,17 @@ function LessonContent({ session }) {
   );
 }
 
-function ExerciseContent({ exercise, language }) {
+function ExerciseContent({ exercise, language, index }) {
   const [showHints, setShowHints] = useState(false);
   const data = parseExercise(exercise);
 
   return (
     <div className="space-y-5">
+      {index != null && (
+        <span className="inline-flex rounded-full bg-udbl-green/10 px-2 py-0.5 text-xs font-bold text-udbl-green-dark">
+          Exercice {index + 1}
+        </span>
+      )}
       <SectionHeading icon="exercise" title={data.title} />
       <p className="leading-relaxed whitespace-pre-line">{data.instructions}</p>
 
@@ -249,6 +287,8 @@ export default function StudySessions() {
   const [phase, setPhase] = useState(PHASES.lesson);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizFeedback, setQuizFeedback] = useState(null);
+  const [quizResults, setQuizResults] = useState(null);
+  const [quizSubmitting, setQuizSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -367,6 +407,7 @@ export default function StudySessions() {
     setPhase(PHASES.lesson);
     setQuizAnswers({});
     setQuizFeedback(null);
+    setQuizResults(null);
   }
 
   function backToOverview() {
@@ -374,10 +415,15 @@ export default function StudySessions() {
     setPhase(PHASES.lesson);
     setQuizAnswers({});
     setQuizFeedback(null);
+    setQuizResults(null);
   }
 
   async function submitQuiz() {
-    const quizData = getQuizData(activeSession?.mini_quiz, activeSession?.theme);
+    const quizData = getQuizData(
+      activeSession?.mini_quiz,
+      activeSession?.theme,
+      activeSession?.language || "C"
+    );
     const { questions, passing_score: passingScore } = quizData;
 
     if (questions.length === 0) {
@@ -392,14 +438,20 @@ export default function StudySessions() {
         quizAttempts: nextProgress.quizAttempts
       });
       setQuizFeedback({ passed: true, score: 100, message: "Leçon validée." });
+      setQuizResults([]);
       await showLessonSuccessDialog(activeSession, 100, 0, 0);
       setPhase(PHASES.review);
       return;
     }
 
-    const unanswered = questions.some(
-      (_, index) => quizAnswers[index] == null || quizAnswers[index] === ""
-    );
+    const unanswered = questions.some((question, index) => {
+      const answer = quizAnswers[index];
+      if (isPracticalQuestion(question)) {
+        return !String(answer || "").trim();
+      }
+      return answer == null || answer === "";
+    });
+
     if (unanswered) {
       setQuizFeedback({
         passed: false,
@@ -409,63 +461,98 @@ export default function StudySessions() {
       return;
     }
 
-    let correct = 0;
-    questions.forEach((question, index) => {
-      if (checkQuizAnswer(quizAnswers[index], question.answer, question.options || [])) {
-        correct += 1;
+    setQuizSubmitting(true);
+
+    try {
+      let correct = 0;
+      const results = [];
+
+      for (let index = 0; index < questions.length; index++) {
+        const question = questions[index];
+        const answer = quizAnswers[index];
+        let isCorrect = false;
+
+        if (isPracticalQuestion(question)) {
+          const correction = await api.correctCode({
+            language: question.language || activeSession.language || "C",
+            question: question.question,
+            correctAnswer: question.correctAnswer || question.answer,
+            userAnswer: String(answer).trim()
+          });
+          isCorrect = Boolean(correction.correct);
+        } else if (
+          checkQuizAnswer(answer, question.answer, question.options || [])
+        ) {
+          isCorrect = true;
+        }
+
+        if (isCorrect) {
+          correct += 1;
+        }
+
+        results.push({ index, correct: isCorrect });
       }
-    });
 
-    const score = Math.round((correct / questions.length) * 100);
-    const passed = score >= (passingScore || 70);
+      const score = Math.round((correct / questions.length) * 100);
+      const passed = score >= (passingScore || 70);
 
-    setQuizFeedback({
-      passed,
-      score,
-      correct,
-      total: questions.length,
-      message: passed
-        ? `Excellent ! ${correct}/${questions.length} — leçon validée (${score}%).`
-        : `Score : ${score}%. Il faut ${passingScore || 70}% minimum. Révisez puis réessayez.`
-    });
-
-    let nextProgress = recordQuizAttempt(
-      programId,
-      progress,
-      activeSession.session_order,
-      {
+      setQuizResults(results);
+      setQuizFeedback({
         passed,
         score,
         correct,
         total: questions.length,
-        theme: activeSession.theme
-      }
-    );
+        message: passed
+          ? `Excellent ! ${correct}/${questions.length} — leçon validée (${score}%).`
+          : `Score : ${score}%. Il faut ${passingScore || 70}% minimum. Révisez puis réessayez.`
+      });
 
-    if (passed) {
-      nextProgress = markSessionCompleted(
+      let nextProgress = recordQuizAttempt(
         programId,
-        nextProgress,
-        activeSession.session_order
+        progress,
+        activeSession.session_order,
+        {
+          passed,
+          score,
+          correct,
+          total: questions.length,
+          theme: activeSession.theme
+        }
       );
+
+      if (passed) {
+        nextProgress = markSessionCompleted(
+          programId,
+          nextProgress,
+          activeSession.session_order
+        );
+      }
+
+      setProgress(nextProgress);
+      void api.saveLessonProgress({
+        completed: nextProgress.completed,
+        quizAttempts: nextProgress.quizAttempts
+      });
+
+      if (passed) {
+        await showLessonSuccessDialog(
+          activeSession,
+          score,
+          correct,
+          questions.length
+        );
+      }
+
+      setPhase(PHASES.review);
+    } catch (err) {
+      await alert({
+        title: "Erreur de correction",
+        message: err.message || "Impossible de corriger le quiz.",
+        variant: "danger"
+      });
+    } finally {
+      setQuizSubmitting(false);
     }
-
-    setProgress(nextProgress);
-    void api.saveLessonProgress({
-      completed: nextProgress.completed,
-      quizAttempts: nextProgress.quizAttempts
-    });
-
-    if (passed) {
-      await showLessonSuccessDialog(
-        activeSession,
-        score,
-        correct,
-        questions.length
-      );
-    }
-
-    setPhase(PHASES.review);
   }
 
   if (loading) {
@@ -491,7 +578,12 @@ export default function StudySessions() {
 
   if (activeSession) {
     const lesson = activeSession.lesson || {};
-    const quizData = getQuizData(activeSession.mini_quiz, activeSession.theme);
+    const quizData = getQuizData(
+      activeSession.mini_quiz,
+      activeSession.theme,
+      activeSession.language || "C"
+    );
+    const exercises = getExercises(activeSession.exercise ?? activeSession.exercises);
     const nextUnlocked = sessions.find(
       (session) =>
         session.session_order === activeSession.session_order + 1 &&
@@ -527,17 +619,30 @@ export default function StudySessions() {
                 className="btn-primary mt-6"
               >
                 <PhaseIcon name="exercise" className="h-4 w-4" />
-                Passer à l&apos;exercice
+                Passer aux exercices
               </button>
             </>
           )}
 
           {phase === PHASES.exercise && (
             <>
-              <ExerciseContent
-                exercise={activeSession.exercise}
-                language={activeSession.language || "C"}
-              />
+              <p className="mb-4 text-sm text-udbl-muted">
+                {exercises.length} exercice(s) pratique(s) — du plus simple au plus exigeant
+              </p>
+              <div className="space-y-8">
+                {exercises.map((exercise, index) => (
+                  <div
+                    key={`${exercise.title || "exercise"}-${index}`}
+                    className="rounded-xl border border-slate-100 p-4"
+                  >
+                    <ExerciseContent
+                      exercise={exercise}
+                      index={index}
+                      language={activeSession.language || "C"}
+                    />
+                  </div>
+                ))}
+              </div>
               <div className="mt-6 flex flex-wrap gap-3">
                 <button type="button" onClick={() => setPhase(PHASES.lesson)} className="btn-outline">
                   Revoir le cours
@@ -561,42 +666,60 @@ export default function StudySessions() {
             <>
               <SectionHeading icon="quiz" title={quizData.title} />
               <p className="mb-4 text-sm text-udbl-muted">
-                {quizData.questions.length} question(s) — score minimum :{" "}
-                {quizData.passing_score || 70}%
+                {quizData.questions.length} question(s) — dont{" "}
+                {quizData.questions.filter((q) => isPracticalQuestion(q)).length} pratique(s) —
+                score minimum : {quizData.passing_score || 70}%
               </p>
 
               <div className="space-y-6">
                 {quizData.questions.map((question, qIndex) => (
                   <div key={qIndex} className="rounded-xl border border-slate-100 p-4">
-                    <p className="mb-3 font-medium">
+                    <div className="mb-3">
                       <span className="mr-2 inline-flex items-center gap-1 rounded-full bg-udbl-blue/10 px-2 py-0.5 text-xs font-bold text-udbl-blue">
                         <PhaseIcon name="quiz" className="h-3.5 w-3.5" />
                         Q{qIndex + 1}
                       </span>
-                      {question.question}
-                    </p>
-                    <div className="space-y-2">
-                      {(question.options || []).map((option, oIndex) => {
-                        const selected = quizAnswers[qIndex] === option;
-                        return (
-                          <button
-                            type="button"
-                            key={`${qIndex}-${oIndex}`}
-                            onClick={() =>
-                              setQuizAnswers((prev) => ({ ...prev, [qIndex]: option }))
-                            }
-                            className={`course-quiz-option ${
-                              selected ? "course-quiz-option--selected" : ""
-                            }`}
-                          >
-                            <span className="course-quiz-option-letter">
-                              {String.fromCharCode(65 + oIndex)}
-                            </span>
-                            <span>{option}</span>
-                          </button>
-                        );
-                      })}
+                      {isPracticalQuestion(question) && (
+                        <span className="mr-2 inline-flex rounded-full bg-udbl-green/10 px-2 py-0.5 text-xs font-semibold text-udbl-green-dark">
+                          Pratique
+                        </span>
+                      )}
+                      <QuestionContent text={question.question} />
                     </div>
+
+                    {isPracticalQuestion(question) ? (
+                      <CodeEditor
+                        value={quizAnswers[qIndex] || ""}
+                        onChange={(value) =>
+                          setQuizAnswers((prev) => ({ ...prev, [qIndex]: value }))
+                        }
+                        language={question.language || activeSession.language || "C"}
+                        disabled={quizSubmitting}
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        {(question.options || []).map((option, oIndex) => {
+                          const selected = quizAnswers[qIndex] === option;
+                          return (
+                            <button
+                              type="button"
+                              key={`${qIndex}-${oIndex}`}
+                              onClick={() =>
+                                setQuizAnswers((prev) => ({ ...prev, [qIndex]: option }))
+                              }
+                              className={`course-quiz-option ${
+                                selected ? "course-quiz-option--selected" : ""
+                              }`}
+                            >
+                              <span className="course-quiz-option-letter">
+                                {String.fromCharCode(65 + oIndex)}
+                              </span>
+                              <span className="whitespace-pre-wrap text-left">{option}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -617,10 +740,10 @@ export default function StudySessions() {
               <button
                 type="button"
                 onClick={submitQuiz}
-                disabled={quizData.questions.length === 0}
+                disabled={quizData.questions.length === 0 || quizSubmitting}
                 className="btn-primary mt-6"
               >
-                Valider le quiz
+                {quizSubmitting ? "Correction en cours..." : "Valider le quiz"}
               </button>
             </>
           )}
@@ -648,20 +771,30 @@ export default function StudySessions() {
               {!quizFeedback?.passed && (
                 <div className="mt-4 space-y-3">
                   {quizData.questions.map(
-                    (question, index) =>
-                      question.explanation &&
-                      !checkQuizAnswer(
-                        quizAnswers[index],
-                        question.answer,
-                        question.options || []
-                      ) && (
-                        <p
-                          key={index}
-                          className="rounded-xl bg-udbl-blue/5 px-4 py-3 text-sm"
-                        >
-                          <strong>Q{index + 1} :</strong> {question.explanation}
-                        </p>
-                      )
+                    (question, index) => {
+                      const wasCorrect = quizResults?.find((r) => r.index === index)?.correct;
+                      const wasWrong =
+                        quizResults != null
+                          ? !wasCorrect
+                          : !isPracticalQuestion(question) &&
+                            !checkQuizAnswer(
+                              quizAnswers[index],
+                              question.answer,
+                              question.options || []
+                            );
+
+                      return (
+                        question.explanation &&
+                        wasWrong && (
+                          <p
+                            key={index}
+                            className="rounded-xl bg-udbl-blue/5 px-4 py-3 text-sm"
+                          >
+                            <strong>Q{index + 1} :</strong> {question.explanation}
+                          </p>
+                        )
+                      );
+                    }
                   )}
                   {Array.isArray(lesson.learning_objectives) && (
                     <ul className="list-disc space-y-1 pl-5 text-sm">

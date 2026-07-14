@@ -12,6 +12,54 @@ function sendProgram(res, result) {
   });
 }
 
+function sendSse(res, payload) {
+  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+export async function createProgramStream(req, res) {
+  const rawThemes = req.body.weakThemes ?? req.body.weak_themes;
+  const weakThemes = Array.isArray(rawThemes)
+    ? rawThemes.filter(Boolean).map(String)
+    : [];
+  const themes =
+    weakThemes.length > 0 ? weakThemes : ["variables", "conditions", "boucles"];
+
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  const emit = (event) => sendSse(res, event);
+
+  try {
+    const result = await studyService.createStudyProgram(
+      req.user.id,
+      themes,
+      req.body.program || req.body.programId,
+      emit
+    );
+
+    emit({
+      phase: "done",
+      message: "Programme prêt !",
+      percent: 100,
+      programId: result.programId,
+      program: result.program,
+      sessions: result.sessions,
+      existing: Boolean(result.existing),
+      repaired: Boolean(result.repaired)
+    });
+  } catch (err) {
+    console.error("Erreur stream création programme :", err);
+    emit({
+      phase: "error",
+      message: err.message || "Erreur création programme"
+    });
+  }
+
+  res.end();
+}
+
 export async function createProgram(req, res) {
   try {
     const userId = req.user.id;
@@ -53,16 +101,6 @@ export async function getMyProgram(req, res) {
       error: "Erreur récupération programme",
       message: err?.message || String(err)
     });
-  }
-}
-
-export async function getSessions(req, res) {
-  try {
-    const sessions = await studyService.getProgramSessions(req.params.programId);
-    res.json({ success: true, sessions });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur récupération sessions" });
   }
 }
 

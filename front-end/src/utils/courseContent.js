@@ -11,11 +11,25 @@ function parseRawJson(value) {
   return null;
 }
 
-function normalizeQuestion(question, fallbackTheme = "la leçon") {
+function normalizeQuestionType(raw) {
+  const type = String(raw.type || raw.question_type || "").toLowerCase();
+  if (type === "pratique" || type === "code" || type === "practical") {
+    return "pratique";
+  }
+  const answer =
+    raw.answer || raw.correct_answer || raw.correctAnswer || raw.expected_answer;
+  if (answer && (!Array.isArray(raw.options) || raw.options.length === 0)) {
+    return "pratique";
+  }
+  return "qcm";
+}
+
+function normalizeQuestion(question, fallbackTheme = "la leçon", language = "C") {
   const raw = question && typeof question === "object" ? question : {};
+  const type = normalizeQuestionType(raw);
   let options = Array.isArray(raw.options) ? raw.options.filter(Boolean) : [];
 
-  if (options.length === 0) {
+  if (type === "qcm" && options.length === 0) {
     options = ["Réponse A", "Réponse B", "Réponse C", "Réponse D"];
   }
 
@@ -23,19 +37,26 @@ function normalizeQuestion(question, fallbackTheme = "la leçon") {
     raw.answer ||
     raw.correct_answer ||
     raw.correctAnswer ||
-    options[0];
+    raw.expected_answer ||
+    options[0] ||
+    "";
 
   return {
+    type,
     question:
       raw.question ||
-      `Quelle affirmation est correcte concernant ${fallbackTheme} ?`,
-    options,
+      (type === "pratique"
+        ? `Écrivez un programme en ${language} illustrant ${fallbackTheme}.`
+        : `Quelle affirmation est correcte concernant ${fallbackTheme} ?`),
+    options: type === "qcm" ? options : [],
     answer: String(answer),
+    correctAnswer: String(answer),
+    language: raw.language || language,
     explanation: raw.explanation || raw.feedback || ""
   };
 }
 
-export function getQuizData(miniQuiz, fallbackTheme = "la leçon") {
+export function getQuizData(miniQuiz, fallbackTheme = "la leçon", language = "C") {
   const parsed = parseRawJson(miniQuiz) || miniQuiz;
 
   if (!parsed || typeof parsed !== "object") {
@@ -50,7 +71,7 @@ export function getQuizData(miniQuiz, fallbackTheme = "la leçon") {
     return {
       title: parsed.title || "Quiz de fin de leçon",
       passing_score: Number(parsed.passing_score) || 70,
-      questions: parsed.questions.map((q) => normalizeQuestion(q, fallbackTheme))
+      questions: parsed.questions.map((q) => normalizeQuestion(q, fallbackTheme, language))
     };
   }
 
@@ -58,7 +79,7 @@ export function getQuizData(miniQuiz, fallbackTheme = "la leçon") {
     return {
       title: parsed.title || "Quiz de fin de leçon",
       passing_score: Number(parsed.passing_score) || 70,
-      questions: [normalizeQuestion(parsed, fallbackTheme)]
+      questions: [normalizeQuestion(parsed, fallbackTheme, language)]
     };
   }
 
@@ -67,6 +88,18 @@ export function getQuizData(miniQuiz, fallbackTheme = "la leçon") {
     passing_score: 70,
     questions: [normalizeQuestion(null, fallbackTheme)]
   };
+}
+
+export function getExercises(exerciseField) {
+  const parsed = parseRawJson(exerciseField) ?? exerciseField;
+
+  if (Array.isArray(parsed)) {
+    return parsed.map((item) =>
+      typeof item === "string" ? parseExercise(item) : normalizeExerciseObject(item)
+    );
+  }
+
+  return [parseExercise(parsed)];
 }
 
 export function parseExercise(exercise) {
@@ -125,8 +158,8 @@ export function normalizeStudySession(session) {
   return {
     ...session,
     lesson: parseRawJson(session.lesson) || session.lesson || {},
-    exercise: parseExercise(session.exercise),
-    mini_quiz: getQuizData(session.mini_quiz, session.theme)
+    exercise: getExercises(session.exercise ?? session.exercises),
+    mini_quiz: getQuizData(session.mini_quiz, session.theme, session.language || "C")
   };
 }
 

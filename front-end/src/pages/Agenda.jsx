@@ -164,9 +164,15 @@ export default function Agenda() {
           "Un SMS récapitulatif de votre programme d'étude vient d'être envoyé sur votre téléphone."
         );
       } else if (data.welcomeSms?.skipped) {
-        setSmsNotice(
-          "Agenda enregistré. Le SMS de programme avait déjà été envoyé pour ce compte."
-        );
+        if (data.welcomeSms.reason === "Twilio non configuré") {
+          setSmsNotice(
+            "Agenda enregistré. Les SMS sont désactivés : Twilio n'est pas configuré sur le serveur (vérifiez TWILIO_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE dans .env)."
+          );
+        } else {
+          setSmsNotice(
+            "Agenda enregistré. Le SMS de programme avait déjà été envoyé pour ce compte."
+          );
+        }
       } else if (data.welcomeSms?.error) {
         setSmsNotice(
           `Agenda enregistré, mais le SMS n'a pas pu être envoyé : ${data.welcomeSms.error}`
@@ -216,7 +222,7 @@ export default function Agenda() {
         {smsNotice && (
           <p
             className={`mb-4 rounded-xl px-4 py-3 text-sm ${
-              smsNotice.includes("n'a pas pu")
+              smsNotice.includes("n'a pas pu") || smsNotice.includes("désactivés")
                 ? "border border-amber-200 bg-amber-50 text-amber-900"
                 : "border border-udbl-green/20 bg-udbl-green/10 text-udbl-green-dark"
             }`}

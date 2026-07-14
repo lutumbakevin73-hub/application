@@ -2,11 +2,13 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import CodeEditor from "../components/CodeEditor";
+import QuestionContent from "../components/QuestionContent";
 import ModalOverlay from "../components/ui/ModalOverlay";
 import { WeakThemesDetail } from "../components/ThemeProgress";
 import { useAuth } from "../context/AuthContext";
 import { useDialog } from "../context/DialogContext";
 import { getWeakThemesFromEvaluation } from "../utils/themeAnalytics";
+import { isPracticalQuestion } from "../utils/questionContent";
 
 function analyzeResults(results) {
   const summary = {
@@ -82,7 +84,7 @@ export default function Quiz() {
     let correction = null;
 
     try {
-      if (q.type === "qcm") {
+      if (q.type === "qcm" && !isPracticalQuestion(q)) {
         if (selected === "") {
           await alert({
             title: "Réponse manquante",
@@ -243,9 +245,9 @@ export default function Quiz() {
         {q.theme && (
           <span className="badge-green mb-3">{q.theme}</span>
         )}
-        <h2 className="text-lg font-semibold text-udbl-dark leading-relaxed mb-6">{q.question}</h2>
+        <QuestionContent text={q.question} className="mb-6" />
 
-        {q.type === "qcm" ? (
+        {q.type === "qcm" && !isPracticalQuestion(q) ? (
           <div className="space-y-3">
             {q.options?.map((opt, index) => (
               <label
@@ -260,7 +262,7 @@ export default function Quiz() {
                   onChange={(e) => setSelected(e.target.value)}
                   className="accent-udbl-blue"
                 />
-                <span>{opt}</span>
+                <span className="whitespace-pre-wrap">{opt}</span>
               </label>
             ))}
           </div>

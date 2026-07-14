@@ -52,7 +52,30 @@ function mapQuestionRow(q) {
   };
 }
 
-const TEST_QUESTION_COUNT = 10;
+const TEST_QUESTION_COUNT = 20;
+
+function isValidQuestion(q) {
+  if (!q || typeof q !== "object") return false;
+  if (!q.question || String(q.question).trim().length < 10) return false;
+  if (!q.theme) return false;
+
+  if (q.type === "qcm") {
+    return (
+      Array.isArray(q.options) &&
+      q.options.length === 4 &&
+      q.options.every((o) => String(o).trim().length > 0) &&
+      Number.isInteger(Number(q.correctAnswer)) &&
+      q.correctAnswer >= 0 &&
+      q.correctAnswer < 4
+    );
+  }
+
+  if (q.type === "pratique") {
+    return String(q.correctAnswer || "").trim().length >= 8;
+  }
+
+  return false;
+}
 
 function normalizeQuestions(questions, language) {
   const lang = normalizeLearningLanguage(language) || "C";
@@ -60,11 +83,14 @@ function normalizeQuestions(questions, language) {
     return [];
   }
 
-  return questions.slice(0, TEST_QUESTION_COUNT).map((q, index) => ({
-    ...q,
-    id: index + 1,
-    language: normalizeLearningLanguage(q.language) || lang
-  }));
+  return questions
+    .filter(isValidQuestion)
+    .slice(0, TEST_QUESTION_COUNT)
+    .map((q, index) => ({
+      ...q,
+      id: index + 1,
+      language: normalizeLearningLanguage(q.language) || lang
+    }));
 }
 
 export async function startTest(language) {

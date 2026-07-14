@@ -24,6 +24,13 @@ router.post(
   requireTestPassed,
   studyController.createProgram
 );
+router.post(
+  "/register/stream",
+  authMiddleware,
+  requireStudent,
+  requireTestPassed,
+  studyController.createProgramStream
+);
 router.get(
   "/progress",
   authMiddleware,
@@ -41,15 +48,6 @@ router.post(
   requireProgramChosen,
   requireAgendaSaved,
   studyController.saveProgress
-);
-router.get(
-  "/:programId/sessions",
-  authMiddleware,
-  requireStudent,
-  requireTestPassed,
-  requireProgramChosen,
-  requireAgendaSaved,
-  studyController.getSessions
 );
 
 export default router;
